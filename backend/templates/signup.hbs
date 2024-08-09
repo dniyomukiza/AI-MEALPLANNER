@@ -3,16 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signup</title>
-    <link rel="stylesheet" href="/styles.css"> <!-- Optional: Link to your CSS file -->
+    <link rel="stylesheet" href="/signup.css">
 </head>
 <body>
     <div class="container">
         <h2>Signup</h2>
         <form action="/signup" method="POST">
+            <div class="form-group">
                 <input type="text" placeholder="Username" name="username" >
                 <input type="password" placeholder="Password" name="password" >
-            <button type="submit">Submit</button>
+
+                <label for="health-conditions">Health conditions</label>
+                <div class="health-conditions">
+                    <label><input type="checkbox" name="health_conditions[]" value="None"> None</label>
+                    <label><input type="checkbox" name="health_conditions[]" value="Diabetes"> Diabetes</label>
+                    <label><input type="checkbox" name="health_conditions[]" value="High blood pressure"> High blood pressure</label>
+                    <label><input type="checkbox" name="health_conditions[]" value="Celiac disease"> Celiac disease</label>
+                    <label><input type="checkbox" name="health_conditions[]" value="High cholesterol"> High cholesterol</label>
+                    <label><input type="checkbox" name="health_conditions[]" value="Osteoporosis"> Osteoporosis</label>
+                    <label><input type="checkbox" name="health_conditions[]" value="Irritable bowel syndrome"> Irritable bowel syndrome</label>
+                    <label><input type="checkbox" name="health_conditions[]" value="Anemia"> Anemia</label>
+                    <label><input type="checkbox" name="health_conditions[]" value="Kidney Disease"> Kidney Disease</label>
+                    <label><input type="checkbox" name="health_conditions[]" value="Gout"> Gout</label>
+                </div>
+
+                <label for="health-goals">Health goal</label>
+                <div class="health-goals">
+                    <label><input type="radio" name="health_goals" value="None"> None</label>
+                    <label><input type="radio" name="health_goals" value="lose weight"> Lose weight</label>
+                    <label><input type="radio" name="health_goals" value="gain weight"> Gain weight</label>
+                    <label><input type="radio" name="health_goals" value="maintain weight"> Maintain weight</label>
+                </div>
+            </div>
+            <button type="submit" class="sub">Submit</button>
         </form>
     </div>
 </body>

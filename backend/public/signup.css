@@ -1,0 +1,95 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    display: grid;
+    place-items: center;
+    font-family: Arial, sans-serif;
+}
+
+h1 {
+    margin-top: 20vh;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+input[type="text"],
+input[type="password"] {
+    font-size: 1rem;
+    width: 300px;
+    padding: 10px 8px;
+    margin: 10px 0;
+    border: 2px solid #aaa;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    border-color: #555;
+    outline: none;
+}
+
+.sub {
+    background-color: rgb(111, 70, 23);
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.sub:hover {
+    background-color: rgb(139, 92, 39);
+}
+
+form {
+    text-align: center;
+    padding: 30px;
+    background-color: rgb(105, 105, 105);
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    background-color: #e5e5e5;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.health-conditions,
+.health-goals {
+    text-align: left;
+    margin: 20px 0;
+}
+
+.health-conditions label,
+.health-goals label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: #333;
+    cursor: pointer;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+}
+
+input[type="checkbox"]:checked + label,
+input[type="radio"]:checked + label {
+    font-weight: bold;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+    color: #333;
+}

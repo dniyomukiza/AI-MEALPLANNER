@@ -1,0 +1,46 @@
+body {
+    font-family: Arial, sans-serif;
+    color: #fff;
+    background: #000;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+.texti {
+    font-size: 2rem;
+    margin: 1rem 0;
+}
+
+p {
+    margin: 0.5rem 0;
+    line-height: 1.5;
+}
+
+a {
+    color: #fff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.text-white {
+    color: #fff;
+}
+
+.text-primary {
+    color: #007bff;
+}
+
+.border-bottom {
+    border-bottom: 1px solid #007bff;
+}
+
+.img-style {
+    width: 80%; /* Adjust size as needed */
+    max-width: 600px; /* Adjust max width as needed */
+    height: auto;
+    margin: 1rem 0;
+}
