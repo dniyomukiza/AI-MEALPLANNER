@@ -8,7 +8,6 @@ const bcrypt = require('bcrypt');
 const { User, Health } = require('./mongodb');
 require('dotenv').config();
 
-
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 const saltRounds = 10;
@@ -102,7 +101,7 @@ app.post('/login', async (req, res) => {
   try {
     const checkUser = await User.findOne({ username: req.body.username });
     if (checkUser && await bcrypt.compare(req.body.password, checkUser.password)) {
-      res.render('home');
+      res.render('upload_photo');
     } else {
       res.send('Incorrect username or password');
     }
@@ -111,28 +110,24 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// adds food items to user inventory
-// async function addToUserInventory(userId, items) {
-//   try {
-
-//     // Find the user's inventory
-//     let inventory = await FoodInventory.findOne({ userId: userId });
+async function addToUserInventory(userId, items) {
+  try {
+    let inventory = await FoodInventory.findOne({ userId: userId });
     
-//     if (!inventory) {
-//       inventory = new FoodInventory({ userId: userId, items: [] });
-//     }
-    
-//     // Splits the items by comma and adds the new items to the inventory
-//     const newItems = items.split(',').map(item => ({ name: item.trim() }));
-//     inventory.items.push(newItems);
+    if (!inventory) {
+      inventory = new FoodInventory({ userId: userId, items: [] });
+    }
 
-//     await inventory.save();
-//     console.log('Items added to inventory successfully');
-//   } catch (error) {
-//     console.error('Error adding items to inventory:', error);
-//     throw error;
-//   }
-// }
+    const newItems = items.split(',').map(item => ({ name: item.trim() }));
+    inventory.items.push(...newItems);
+
+    await inventory.save();
+    console.log('Items added to inventory successfully');
+  } catch (error) {
+    console.error('Error adding items to inventory:', error);
+    throw error;
+  }
+}
 
 //Lists the food items in the image
 app.post('/analyze-image', upload.single('image'), async (req, res) => {
@@ -142,8 +137,6 @@ app.post('/analyze-image', upload.single('image'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'Please upload an image file.' });
     }
-
-    
 
     // Get the generative model
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
@@ -155,8 +148,6 @@ app.post('/analyze-image', upload.single('image'), async (req, res) => {
     const response = await result.response;
     const text = response.text();
 
-    // Add items to user's inventory
-   // await addToUserInventory(User, text);
 
     console.log(text);
 

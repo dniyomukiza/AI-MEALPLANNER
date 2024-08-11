@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Image Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        #uploadForm {
+            margin-bottom: 20px;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #foodList {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        #foodList li {
+            margin-bottom: 5px;
+            padding: 5px;
+            background-color: #f0f0f0;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Food Image Analyzer</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="imageInput" name="image" accept="image/*" required>
+        <button type="submit">Analyze Image</button>
+    </form>
+    <div id="result">
+        <h2>Detected Food Items:</h2>
+        <ul id="foodList"></ul>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const resultDiv = document.getElementById('result');
+        const foodList = document.getElementById('foodList');
+
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(form);
+            
+            try {
+                foodList.innerHTML = '<li>Analyzing image...</li>';
+                const response = await fetch('/analyze-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Image analysis failed');
+                }
+                
+                const data = await response.json();
+                const foodItems = data.items.split(',').map(item => item.trim());
+                
+                foodList.innerHTML = '';
+                foodItems.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    foodList.appendChild(li);
+                });
+            } catch (error) {
+                foodList.innerHTML = `<li>Error: ${error.message}</li>`;
+            }
+        });
+    </script>
+</body>
+</html>

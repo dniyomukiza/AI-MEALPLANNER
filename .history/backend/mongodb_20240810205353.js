@@ -60,4 +60,4 @@ const Health = mongoose.model("Health", healthSchema);
 //const FoodInventory = mongoose.model("FoodInventory", foodInventorySchema);
 
 // Export Models
-module.exports = { User, Health };
+module.exports = { User, Health, FoodInventory };

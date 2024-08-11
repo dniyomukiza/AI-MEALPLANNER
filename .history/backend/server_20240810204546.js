@@ -112,27 +112,27 @@ app.post('/login', async (req, res) => {
 });
 
 // adds food items to user inventory
-// async function addToUserInventory(userId, items) {
-//   try {
+async function addToUserInventory(userId, items) {
+  try {
 
-//     // Find the user's inventory
-//     let inventory = await FoodInventory.findOne({ userId: userId });
+    // Find the user's inventory
+    let inventory = await FoodInventory.findOne({ userId: userId });
     
-//     if (!inventory) {
-//       inventory = new FoodInventory({ userId: userId, items: [] });
-//     }
+    if (!inventory) {
+      inventory = new FoodInventory({ userId: userId, items: [] });
+    }
     
-//     // Splits the items by comma and adds the new items to the inventory
-//     const newItems = items.split(',').map(item => ({ name: item.trim() }));
-//     inventory.items.push(newItems);
+    // Splits the items by comma and adds the new items to the inventory
+    const newItems = items.split(',').map(item => ({ name: item.trim() }));
+    inventory.items.push(newItems);
 
-//     await inventory.save();
-//     console.log('Items added to inventory successfully');
-//   } catch (error) {
-//     console.error('Error adding items to inventory:', error);
-//     throw error;
-//   }
-// }
+    await inventory.save();
+    console.log('Items added to inventory successfully');
+  } catch (error) {
+    console.error('Error adding items to inventory:', error);
+    throw error;
+  }
+}
 
 //Lists the food items in the image
 app.post('/analyze-image', upload.single('image'), async (req, res) => {
@@ -156,7 +156,7 @@ app.post('/analyze-image', upload.single('image'), async (req, res) => {
     const text = response.text();
 
     // Add items to user's inventory
-   // await addToUserInventory(User, text);
+    await addToUserInventory(User, text);
 
     console.log(text);
 

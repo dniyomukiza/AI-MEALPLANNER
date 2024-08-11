@@ -8,7 +8,6 @@ const bcrypt = require('bcrypt');
 const { User, Health } = require('./mongodb');
 require('dotenv').config();
 
-
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 const saltRounds = 10;
@@ -111,29 +110,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// adds food items to user inventory
-// async function addToUserInventory(userId, items) {
-//   try {
-
-//     // Find the user's inventory
-//     let inventory = await FoodInventory.findOne({ userId: userId });
-    
-//     if (!inventory) {
-//       inventory = new FoodInventory({ userId: userId, items: [] });
-//     }
-    
-//     // Splits the items by comma and adds the new items to the inventory
-//     const newItems = items.split(',').map(item => ({ name: item.trim() }));
-//     inventory.items.push(newItems);
-
-//     await inventory.save();
-//     console.log('Items added to inventory successfully');
-//   } catch (error) {
-//     console.error('Error adding items to inventory:', error);
-//     throw error;
-//   }
-// }
-
 //Lists the food items in the image
 app.post('/analyze-image', upload.single('image'), async (req, res) => {
   try {
@@ -142,8 +118,6 @@ app.post('/analyze-image', upload.single('image'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'Please upload an image file.' });
     }
-
-    
 
     // Get the generative model
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
@@ -154,10 +128,6 @@ app.post('/analyze-image', upload.single('image'), async (req, res) => {
     const result = await model.generateContent([prompt, ...imageParts]);
     const response = await result.response;
     const text = response.text();
-
-    // Add items to user's inventory
-   // await addToUserInventory(User, text);
-
     console.log(text);
 
     // Delete the uploaded file

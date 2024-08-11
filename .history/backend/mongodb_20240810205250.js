@@ -57,7 +57,7 @@ const healthSchema = new mongoose.Schema({
 // Create Models that use the schemas
 const User = mongoose.model("User", userSchema);
 const Health = mongoose.model("Health", healthSchema);
-//const FoodInventory = mongoose.model("FoodInventory", foodInventorySchema);
+const FoodInventory = mongoose.model("FoodInventory", foodInventorySchema);
 
 // Export Models
-module.exports = { User, Health };
+module.exports = { User, Health, FoodInventory };

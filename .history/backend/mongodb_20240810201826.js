@@ -35,29 +35,29 @@ const healthSchema = new mongoose.Schema({
 });
 
 // Define Food Item Schema
-// const foodItemSchema = new mongoose.Schema({
-//   name: {
-//     type: String,
-//     required: true
-//   },
+const foodItemSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
 
-// });
+});
 
-// // Define Food Inventory Schema
-// const foodInventorySchema = new mongoose.Schema({
-//   userId: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: 'User',
-//     required: true,
-//     unique: true
-//   },
-//   items: [foodItemSchema]
-// });
+// Define Food Inventory Schema
+const foodInventorySchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true
+  },
+  items: [foodItemSchema]
+});
 
 // Create Models that use the schemas
 const User = mongoose.model("User", userSchema);
 const Health = mongoose.model("Health", healthSchema);
-//const FoodInventory = mongoose.model("FoodInventory", foodInventorySchema);
+const FoodInventory = mongoose.model("FoodInventory", foodInventorySchema);
 
 // Export Models
-module.exports = { User, Health };
+module.exports = { User, Health, FoodInventory };
