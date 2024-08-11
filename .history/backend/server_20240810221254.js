@@ -9,11 +9,6 @@ const bcrypt = require('bcrypt');
 const { User, Health, FoodInventory } = require('./mongodb');
 require('dotenv').config();
 
-const app = express();
-const upload = multer({ dest: 'uploads/' });
-const saltRounds = 10;
-
-
 //The session secret is used to create a hash (or signature) of the session ID. 
 //When the server receives a session cookie from a client, it verifies that the session ID has not been 
 //altered by checking the hash.
@@ -38,6 +33,10 @@ const isAuthenticated = (req, res, next) => {
 };
 
 
+const app = express();
+const upload = multer({ dest: 'uploads/' });
+const saltRounds = 10;
+
 // Path to my-app/templates directory
 const templatePath = path.join(__dirname, '../my-app/templates');
 
@@ -54,22 +53,20 @@ app.use(express.urlencoded({ extended: true }));
 // Google AI setup
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
-// Redirect to login page if not authenticated
-app.get('/', isAuthenticated, (req, res) => {
-  res.render('home');  // Render the home page if user is authenticated
+
+// Routes
+app.get('/', (req, res) => {
+  res.render('home');
 });
 
-// Display login page directly when accessing root
-app.get('/login', (req, res) => {
-  res.render('login');
-});
-
-// Display signup page directly when accessing root
 app.get('/signup', (req, res) => {
   res.render('signup');
 });
 
-// Display the user's inventory
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
 app.get('/upload_photo', (req, res) => {
   res.render('upload_photo');
 });
@@ -122,7 +119,6 @@ app.post('/login', async (req, res) => {
     const user = await User.findOne({ username: req.body.username });
     if (user && await bcrypt.compare(req.body.password, user.password)) {
       res.render('home');
-      // Save the user ID in the session
       req.session.userId = user._id;
     } else {
       res.send('Incorrect username or password');
@@ -145,27 +141,29 @@ app.get('/logout', (req, res) => {
 // Splits the text by comma and adds the new items to user inventory
 async function addToUserInventory(userId, items) {
   try {
+
+    // Find the user's inventory
     let inventory = await FoodInventory.findOne({ userId: userId });
     
+    // If the inventory does not exist, create a new one
     if (!inventory) {
       inventory = new FoodInventory({ userId: userId, items: [] });
     }
     
-    // Split the text by comma and add the new items to the inventory
-    const newItems = items.split(',').map(item => ({ name: item.trim() })).filter(item => item.name !== '');
-    inventory.items.push(...newItems);
+    // Splits the items by comma and adds the new items to the inventory
+    const newItems = items.split(',').map(item => ({ name: item.trim() }));
+    inventory.items.push(newItems);
 
     // Save the inventory
     await inventory.save();
     console.log('Items added to inventory successfully');
-
   } catch (error) {
     console.error('Error adding items to inventory:', error);
     throw error;
   }
 }
 
-//Converts the file to a generative part so that it can be used as input to the generative model
+//Converts the file to a generative part
 function fileToGenerativePart(filePath, mimeType) {
   return {
     inlineData: {
@@ -175,7 +173,7 @@ function fileToGenerativePart(filePath, mimeType) {
   };
 }
 
-//Lists the food items from the image and inserts them into the user's inventory
+//Lists the food items in the image
 app.post('/analyze-image', upload.single('image'), async (req, res) => {
   try {
 

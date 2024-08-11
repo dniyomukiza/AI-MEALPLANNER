@@ -34,13 +34,24 @@ const healthSchema = new mongoose.Schema({
   }
 });
 
+// Define Food Item Schema
 const foodInventorySchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     items: [{
       name: { type: String, required: true }
     }]
   });
-  
+
+// Define Food Inventory Schema
+const foodInventorySchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true
+  },
+  items: [foodItemSchema]
+});
 
 // Create Models that use the schemas
 const User = mongoose.model("User", userSchema);

@@ -64,12 +64,11 @@ app.get('/login', (req, res) => {
   res.render('login');
 });
 
-// Display signup page directly when accessing root
-app.get('/signup', (req, res) => {
-  res.render('signup');
+// Home page
+app.get('/login', (req, res) => {
+  res.render('login');
 });
 
-// Display the user's inventory
 app.get('/upload_photo', (req, res) => {
   res.render('upload_photo');
 });
@@ -122,7 +121,6 @@ app.post('/login', async (req, res) => {
     const user = await User.findOne({ username: req.body.username });
     if (user && await bcrypt.compare(req.body.password, user.password)) {
       res.render('home');
-      // Save the user ID in the session
       req.session.userId = user._id;
     } else {
       res.send('Incorrect username or password');
@@ -155,15 +153,14 @@ async function addToUserInventory(userId, items) {
     const newItems = items.split(',').map(item => ({ name: item.trim() })).filter(item => item.name !== '');
     inventory.items.push(...newItems);
 
-    // Save the inventory
     await inventory.save();
     console.log('Items added to inventory successfully');
-
   } catch (error) {
     console.error('Error adding items to inventory:', error);
     throw error;
   }
 }
+
 
 //Converts the file to a generative part so that it can be used as input to the generative model
 function fileToGenerativePart(filePath, mimeType) {

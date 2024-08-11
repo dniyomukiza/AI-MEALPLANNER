@@ -6,13 +6,8 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const fs = require("fs");
 const mongoose = require("mongoose");
 const bcrypt = require('bcrypt');
-const { User, Health, FoodInventory } = require('./mongodb');
+const { User, Health } = require('./mongodb');
 require('dotenv').config();
-
-const app = express();
-const upload = multer({ dest: 'uploads/' });
-const saltRounds = 10;
-
 
 //The session secret is used to create a hash (or signature) of the session ID. 
 //When the server receives a session cookie from a client, it verifies that the session ID has not been 
@@ -28,15 +23,10 @@ app.use(session({
   }
 }));
 
-// Middleware to check if user is logged in
-const isAuthenticated = (req, res, next) => {
-  if (req.session.userId) {
-    next();
-  } else {
-    res.redirect('/login');
-  }
-};
 
+const app = express();
+const upload = multer({ dest: 'uploads/' });
+const saltRounds = 10;
 
 // Path to my-app/templates directory
 const templatePath = path.join(__dirname, '../my-app/templates');
@@ -54,22 +44,28 @@ app.use(express.urlencoded({ extended: true }));
 // Google AI setup
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
-// Redirect to login page if not authenticated
-app.get('/', isAuthenticated, (req, res) => {
-  res.render('home');  // Render the home page if user is authenticated
+function fileToGenerativePart(filePath, mimeType) {
+  return {
+    inlineData: {
+      data: Buffer.from(fs.readFileSync(filePath)).toString("base64"),
+      mimeType
+    },
+  };
+}
+
+// Routes
+app.get('/', (req, res) => {
+  res.render('home');
 });
 
-// Display login page directly when accessing root
-app.get('/login', (req, res) => {
-  res.render('login');
-});
-
-// Display signup page directly when accessing root
 app.get('/signup', (req, res) => {
   res.render('signup');
 });
 
-// Display the user's inventory
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
 app.get('/upload_photo', (req, res) => {
   res.render('upload_photo');
 });
@@ -119,11 +115,9 @@ app.post('/signup', async (req, res) => {
 // login user
 app.post('/login', async (req, res) => {
   try {
-    const user = await User.findOne({ username: req.body.username });
-    if (user && await bcrypt.compare(req.body.password, user.password)) {
+    const checkUser = await User.findOne({ username: req.body.username });
+    if (checkUser && await bcrypt.compare(req.body.password, checkUser.password)) {
       res.render('home');
-      // Save the user ID in the session
-      req.session.userId = user._id;
     } else {
       res.send('Incorrect username or password');
     }
@@ -132,50 +126,30 @@ app.post('/login', async (req, res) => {
   }
 });
 
-//logs the user out and destroys the session
-app.get('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error('Error destroying session:', err);
-    }
-    res.redirect('/login');
-  });
-});
+// adds food items to user inventory
+// async function addToUserInventory(userId, items) {
+//   try {
 
-// Splits the text by comma and adds the new items to user inventory
-async function addToUserInventory(userId, items) {
-  try {
-    let inventory = await FoodInventory.findOne({ userId: userId });
+//     // Find the user's inventory
+//     let inventory = await FoodInventory.findOne({ userId: userId });
     
-    if (!inventory) {
-      inventory = new FoodInventory({ userId: userId, items: [] });
-    }
+//     if (!inventory) {
+//       inventory = new FoodInventory({ userId: userId, items: [] });
+//     }
     
-    // Split the text by comma and add the new items to the inventory
-    const newItems = items.split(',').map(item => ({ name: item.trim() })).filter(item => item.name !== '');
-    inventory.items.push(...newItems);
+//     // Splits the items by comma and adds the new items to the inventory
+//     const newItems = items.split(',').map(item => ({ name: item.trim() }));
+//     inventory.items.push(newItems);
 
-    // Save the inventory
-    await inventory.save();
-    console.log('Items added to inventory successfully');
+//     await inventory.save();
+//     console.log('Items added to inventory successfully');
+//   } catch (error) {
+//     console.error('Error adding items to inventory:', error);
+//     throw error;
+//   }
+// }
 
-  } catch (error) {
-    console.error('Error adding items to inventory:', error);
-    throw error;
-  }
-}
-
-//Converts the file to a generative part so that it can be used as input to the generative model
-function fileToGenerativePart(filePath, mimeType) {
-  return {
-    inlineData: {
-      data: Buffer.from(fs.readFileSync(filePath)).toString("base64"),
-      mimeType
-    },
-  };
-}
-
-//Lists the food items from the image and inserts them into the user's inventory
+//Lists the food items in the image
 app.post('/analyze-image', upload.single('image'), async (req, res) => {
   try {
 
@@ -183,6 +157,8 @@ app.post('/analyze-image', upload.single('image'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'Please upload an image file.' });
     }
+
+    
 
     // Get the generative model
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
@@ -195,7 +171,7 @@ app.post('/analyze-image', upload.single('image'), async (req, res) => {
     const text = response.text();
 
     // Add items to user's inventory
-   await addToUserInventory(req.session.userId, text);
+   // await addToUserInventory(User, text);
 
     console.log(text);
 
