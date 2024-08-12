@@ -55,9 +55,8 @@ app.use(express.urlencoded({ extended: true }));
 // Google AI setup
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
-// Redirect to login page if not authenticated
-app.get('/', isAuthenticated, (req, res) => {
-  res.render('home');  // Render the home page if user is authenticated
+app.get('/', (req, res) => {
+  res.render('home');
 });
 
 // Display login page directly when accessing root
@@ -128,7 +127,8 @@ app.post('/login', async (req, res) => {
   try {
     const user = await User.findOne({ username: req.body.username });
     if (user && await bcrypt.compare(req.body.password, user.password)) {
-      res.render('home');
+      res.render('upload_photo');
+
       // Save the user ID in the session
       req.session.userId = user._id;
     } else {
@@ -145,7 +145,7 @@ app.get('/logout', (req, res) => {
     if (err) {
       console.error('Error destroying session:', err);
     }
-    res.redirect('/login');
+    res.redirect('/home');
   });
 });
 
