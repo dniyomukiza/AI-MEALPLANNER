@@ -33,6 +33,14 @@
             background-color: #f0f0f0;
             border-radius: 3px;
         }
+        .flash-message {
+            padding: 10px;
+            background-color: #dff0d8;
+            border: 1px solid #d0e9c6;
+            border-radius: 4px;
+            color: #3c763d;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -79,6 +87,14 @@
                     li.textContent = item;
                     foodList.appendChild(li);
                 });
+
+                // Display flash message if available
+                if (data.message) {
+                    const flashMessage = document.createElement('div');
+                    flashMessage.className = 'flash-message';
+                    flashMessage.textContent = data.message;
+                    resultDiv.prepend(flashMessage);
+                }
             } catch (error) {
                 foodList.innerHTML = `<li>Error: ${error.message}</li>`;
             }

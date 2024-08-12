@@ -9,6 +9,14 @@
 <body>
     <div class="container">
         <div class="form-container">
+
+            <!-- Loop through the messages and display them -->
+            {{#each messages}}
+                <div class="alert alert-danger">
+                    {{this}}
+                </div>
+            {{/each}}
+
             <form action="/login" method="POST">
                 <input type="text" placeholder="Username" name="username" required>
                 <input type="password" placeholder="Password" name="password" required>
@@ -19,3 +27,4 @@
     </div>
 </body>
 </html>
+
