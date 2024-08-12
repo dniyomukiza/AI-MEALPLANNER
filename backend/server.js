@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const flash = require('express-flash');
 const session = require('express-session');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const fs = require("fs");
@@ -27,6 +28,7 @@ app.use(session({
   }
 }));
 
+app.use(flash());
 // Middleware to check if user is logged in
 const isAuthenticated = (req, res, next) => {
   if (req.session.userId) {
@@ -73,27 +75,28 @@ app.get('/upload_photo', (req, res) => {
   res.render('upload_photo');
 });
 
-//register user
+// Register user
 app.post('/signup', async (req, res) => {
-
   try {
-
     // Hash the password
     const hashed_password = await bcrypt.hash(req.body.password, saltRounds);
     const userData = {
       username: req.body.username,
       password: hashed_password
-
     };
 
     // Check if the user already exists
     const existingUser = await User.findOne({ username: userData.username });
     if (existingUser) {
+      // Flash a message and redirect to login
+      req.flash('error', 'This user already exists! Please log in.');
       return res.redirect('/login');
     }
+
+    // If user doesn't exist, create a new user
     const user = new User(userData);
     await user.save();
- 
+
     // Save health data
     const healthConditions = req.body.health_conditions || [];
     const healthGoal = req.body.health_goals || '';
@@ -107,14 +110,19 @@ app.post('/signup', async (req, res) => {
     const health = new Health(healthData);
     await health.save();
 
-    res.render('login');
+    // Flash a success message and redirect to login
+    req.flash('success', 'Account created successfully! Please log in.');
+    res.redirect('/login'); 
   } catch (err) {
     console.error('Error during signup:', err);
     res.status(500).send('Internal Server Error');
   }
-
 });
 
+// Route to display the login page
+app.get('/login', (req, res) => {
+  res.render('login', { messages: req.flash('error') });
+});
 // login user
 app.post('/login', async (req, res) => {
   try {
@@ -174,46 +182,31 @@ function fileToGenerativePart(filePath, mimeType) {
   };
 }
 
-//Lists the food items from the image and inserts them into the user's inventory
+// Lists the food items from the image and inserts them into the user's inventory
 app.post('/analyze-image', upload.single('image'), async (req, res) => {
   try {
-
-    // Check if the request contains an image file
     if (!req.file) {
       return res.status(400).json({ error: 'Please upload an image file.' });
     }
 
-    // Get the generative model
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
     const prompt = "What are the food items you see in this image? Split the food items by comma";
     const imageParts = [fileToGenerativePart(req.file.path, req.file.mimetype)];
 
-    // Generate content
     const result = await model.generateContent([prompt, ...imageParts]);
     const response = await result.response;
     const text = response.text();
 
-    // Add items to user's inventory
-   await addToUserInventory(req.session.userId, text);
-
-    console.log(text);
-
-    // Delete the uploaded file
+    await addToUserInventory(req.session.userId, text);
     fs.unlinkSync(req.file.path);
 
-    // Send the response
-    res.json({ items: text });
-
+    res.json({ items: text, message: 'Item has been recorded' });
   } catch (error) {
-    console.log('Error analyzing image:', error);
-
-    // Send an error response
     res.status(500).json({
       error: 'Image analysis failed.',
       details: error.message
     });
   }
-
 });
 
 // Start the server
