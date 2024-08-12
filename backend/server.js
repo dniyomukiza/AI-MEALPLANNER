@@ -8,7 +8,6 @@ const mongoose = require("mongoose");
 const bcrypt = require('bcrypt');
 const { User, Health, FoodInventory } = require('./mongodb');
 require('dotenv').config();
-
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 const saltRounds = 10;
