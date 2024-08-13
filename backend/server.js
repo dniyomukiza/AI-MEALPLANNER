@@ -209,6 +209,25 @@ app.post('/analyze-image', upload.single('image'), async (req, res) => {
   }
 });
 
+
+app.get('/inventory', isAuthenticated, async (req, res) => {
+  try {
+
+    // Find the user's food inventory
+    const inventory = await FoodInventory.findOne({ userId: req.session.userId });
+
+    // If the inventory doesn't exist, initialize an empty array
+    const items = inventory ? inventory.items : [];
+
+    res.json({ items });
+  
+  } catch (error) {
+    console.error('Error retrieving inventory:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 

@@ -57,17 +57,43 @@
         <ul id="foodList"></ul>
     </div>
 
+    <div id="inventory">
+        <h2>Inventory</h2>
+        <ul id="inventoryList"></ul>
+    </div>
+
+
     <script>
         const form = document.getElementById('uploadForm');
         const resultDiv = document.getElementById('result');
         const foodList = document.getElementById('foodList');
+        const inventoryList = document.getElementById('inventoryList');
+
+
+        async function fetchInventory() {
+            try {
+                const response = await fetch('/inventory');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch inventory');
+                }
+                const data = await response.json();
+                inventoryList.innerHTML = '';
+                data.items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = `${item.name}`;
+                    inventoryList.appendChild(li);
+                });
+            } catch (error) {
+                inventoryList.innerHTML = `<li>Error: ${error.message}</li>`;
+            }
+        }
 
         form.addEventListener('submit', async function(event) {
             event.preventDefault();
-            
             const formData = new FormData(form);
             
             try {
+
                 foodList.innerHTML = '<li>Analyzing image...</li>';
                 const response = await fetch('/analyze-image', {
                     method: 'POST',
@@ -98,7 +124,11 @@
             } catch (error) {
                 foodList.innerHTML = `<li>Error: ${error.message}</li>`;
             }
+
+            await fetchInventory();
         });
+
+        document.addEventListener('DOMContentLoaded', fetchInventory);
     </script>
 </body>
 </html>
