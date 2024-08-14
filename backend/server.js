@@ -3,6 +3,8 @@ const multer = require('multer');
 const path = require('path');
 const flash = require('express-flash');
 const session = require('express-session');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const fs = require("fs");
 const mongoose = require("mongoose");
@@ -15,8 +17,6 @@ const saltRounds = 10;
 
 
 //The session secret is used to create a hash (or signature) of the session ID. 
-//When the server receives a session cookie from a client, it verifies that the session ID has not been 
-//altered by checking the hash.
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -37,6 +37,15 @@ const isAuthenticated = (req, res, next) => {
     res.redirect('/login');
   }
 };
+
+// Create a transporter object using environment variables
+const transporter = nodemailer.createTransport({
+  service: 'Gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 
 // Path to my-app/templates directory
@@ -74,70 +83,71 @@ app.get('/upload_photo', (req, res) => {
   res.render('upload_photo');
 });
 
-// Register user
+
 app.post('/signup', async (req, res) => {
   try {
-    // Hash the password
-    const hashed_password = await bcrypt.hash(req.body.password, saltRounds);
-    const userData = {
-      username: req.body.username,
-      password: hashed_password
-    };
+    const { username, password, user_email } = req.body;
 
-    // Check if the user already exists
-    const existingUser = await User.findOne({ username: userData.username });
+    // Normalize the username to lowercase for case-insensitive comparison
+    const normalizedUsername = username.toLowerCase();
+
+    // Check if user already exists (case-insensitive search)
+    const existingUser = await User.findOne({ username: normalizedUsername });
+
     if (existingUser) {
-      // Flash a message and redirect to login
-      req.flash('error', 'This user already exists! Please log in.');
-      return res.redirect('/login');
+      req.flash('error', 'This user already exists. Please login or reset password');
+      return res.redirect('/login'); // Ensure this return statement exits the function
     }
 
-    // If user doesn't exist, create a new user
-    const user = new User(userData);
-    await user.save();
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Save health data
-    const healthConditions = req.body.health_conditions || [];
-    const healthGoal = req.body.health_goals || '';
-    const healthData = {
-      userId: user._id,
-      health_cond: healthConditions,
-      goal: healthGoal
-    };
+    // Create and save new user
+    const newUser = new User({
+      username: normalizedUsername, // Save the username in lowercase
+      password: hashedPassword,
+      user_email
+    });
 
-    // Save the health data
-    const health = new Health(healthData);
-    await health.save();
+    await newUser.save();
 
-    // Flash a success message and redirect to login
-    req.flash('success', 'Account created successfully! Please log in.');
-    res.redirect('/login'); 
-  } catch (err) {
-    console.error('Error during signup:', err);
-    res.status(500).send('Internal Server Error');
+    // Set flash message and redirect to login page
+    req.flash('success', 'Registration successful. Please log in.');
+    return res.redirect('/login'); // Ensure this return statement exits the function
+  } catch (error) {
+    console.error('Error during signup:', error);
+    req.flash('error', 'Internal Server Error');
+    return res.redirect('/signup'); // Ensure this return statement exits the function
   }
 });
 
-// Route to display the login page
-app.get('/login', (req, res) => {
-  res.render('login', { messages: req.flash('error') });
-});
+
 // login user
 app.post('/login', async (req, res) => {
   try {
-    const user = await User.findOne({ username: req.body.username });
-    if (user && await bcrypt.compare(req.body.password, user.password)) {
-      res.render('upload_photo');
+    // Convert username to lowercase for case-insensitive search
+    const username = req.body.username.toLowerCase();
+    
+    // Find user by lowercase username
+    const user = await User.findOne({ username: new RegExp('^' + username + '$', 'i') });
 
-      // Save the user ID in the session
-      req.session.userId = user._id;
+    if (user) {
+      if (await bcrypt.compare(req.body.password, user.password)) {
+        req.session.userId = user._id; //
+        res.redirect('/upload_photo'); 
+      } else {
+        res.redirect(`/reset?username=${encodeURIComponent(req.body.username)}`); // Redirect to reset if password is incorrect
+      }
     } else {
-      res.send('Incorrect username or password');
+      // Flash a message and redirect to the signup page if the user does not exist
+      req.flash('error', 'This user does not exist. Please register!');
+      res.redirect('/signup');
     }
   } catch (err) {
-    res.send('Wrong credentials');
+    res.status(500).send('Server Error');
   }
 });
+
 
 //logs the user out and destroys the session
 app.get('/logout', (req, res) => {
@@ -234,3 +244,119 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+//Display form to user
+app.route('/reset')
+  .get((req, res) => {
+    res.render('reset'); 
+  })
+
+//Reset route
+app.route('/reset')
+  .post(async (req, res) => {
+    const { username, user_email } = req.body;
+
+    if (!username || !user_email) {
+      return res.status(400).send('Username and email are required');
+    }
+
+    try {
+      const user = await User.findOne({ username });
+
+      if (!user) {
+        return res.status(404).send('User not found');
+      }
+
+      function generateResetToken() {
+        return crypto.randomBytes(32).toString('hex');
+      }
+
+      // Generate and store reset token
+      const resetToken = generateResetToken();
+      const resetTokenExpiry = Date.now() + 3600000; // 1 hour from now
+
+      await User.updateOne(
+        { username },
+        { user_email, resetToken, resetTokenExpiry }
+      );
+
+      // Send email with reset link
+      const resetLink = `http://localhost:3000/update_password?token=${resetToken}`;
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: user_email,
+        subject: 'Password Reset',
+        text: `Click the link to reset your password: ${resetLink}`
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error(error);
+          return res.status(500).send('Error sending email');
+        }
+        res.send('Password reset link sent');
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Server Error');
+    }
+  });
+
+  app.route('/update_password')
+  .get(async (req, res) => {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).send('Token is required');
+    }
+
+    try {
+      const user = await User.findOne({
+        resetToken: token,
+        resetTokenExpiry: { $gt: Date.now() }
+      });
+
+      if (!user) {
+        return res.status(400).send('Invalid or expired token');
+      }
+
+      // Render reset password form
+      res.render('update_password', { token });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Server Error');
+    }
+  })
+  .post(async (req, res) => {
+    const { token, new_password } = req.body;
+
+    if (!token || !new_password) {
+      return res.status(400).send('Token and new password are required');
+    }
+
+    try {
+      const user = await User.findOne({
+        resetToken: token,
+        resetTokenExpiry: { $gt: Date.now() }
+      });
+
+      if (!user) {
+        return res.status(400).send('Invalid or expired token');
+      }
+
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(new_password, 10);
+
+      // Update the user's password and clear the reset token
+      await User.updateOne(
+        { resetToken: token },
+        { password: hashedPassword, resetToken: null, resetTokenExpiry: null }
+      );
+
+      // Redirect to login page
+      res.redirect('/login');
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Server Error');
+    }
+  });
