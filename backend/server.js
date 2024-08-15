@@ -237,12 +237,29 @@ app.get('/inventory', isAuthenticated, async (req, res) => {
   }
 });
 
+app.post('/delete_item', isAuthenticated, async (req, res) => {
+  try {
 
-// Start the server
-const PORT = process.env.PORT || 3000;
+    // Get the item to delete from the query string
+    const { item } = req.query;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    // Find the user's food inventory
+    const inventory = await FoodInventory.findOne({ userId: req.session.userId });
+
+    if (!inventory) {
+      return res.status(404).send('Inventory not found');
+    }
+
+    // Remove the item from the inventory
+    inventory.items = inventory.items.filter(i => i.name !== item);
+
+    // Save the updated inventory
+    await inventory.save();
+    res.send('Item deleted successfully');
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 //Display form to user
@@ -360,3 +377,11 @@ app.route('/reset')
       res.status(500).send('Server Error');
     }
   });
+
+  // Start the server
+  const PORT = process.env.PORT || 3000;
+
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+  

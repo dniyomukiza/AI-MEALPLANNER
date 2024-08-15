@@ -5,34 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Food Image Analyzer</title>
     <style>
+
         body {
             font-family: Arial, sans-serif;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
         }
+
         h1, h2 {
             color: #333;
         }
+
         #uploadForm {
             margin-bottom: 20px;
         }
+
         #result {
             margin-top: 20px;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
+        
+        .scroll-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
         #foodList {
             list-style-type: none;
             padding-left: 0;
+            margin: 0;
         }
         #foodList li {
             margin-bottom: 5px;
-            padding: 5px;
-            background-color: #f0f0f0;
-            border-radius: 3px;
         }
+
         .flash-message {
             padding: 10px;
             background-color: #dff0d8;
@@ -40,6 +51,36 @@
             border-radius: 4px;
             color: #3c763d;
             margin-bottom: 20px;
+        }
+
+        #inventoryList {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .inventory-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border-radius: 3px;
+        }
+
+        .delete-btn {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
     </style>
 </head>
@@ -54,21 +95,26 @@
     </form>
     <div id="result">
         <h2>Detected Food Items:</h2>
-        <ul id="foodList"></ul>
+        <div class="scroll-container">
+            <ul id="foodList"></ul>
+        </div>
     </div>
 
     <div id="inventory">
         <h2>Inventory</h2>
-        <ul id="inventoryList"></ul>
+        <div class="scroll-container">
+            <ul id="inventoryList"></ul>
+        </div>
     </div>
 
-
     <script>
+        document.addEventListener('DOMContentLoaded', fetchInventory);
+
+        // Get references to the form and result elements
         const form = document.getElementById('uploadForm');
         const resultDiv = document.getElementById('result');
         const foodList = document.getElementById('foodList');
         const inventoryList = document.getElementById('inventoryList');
-
 
         async function fetchInventory() {
             try {
@@ -80,20 +126,26 @@
                 inventoryList.innerHTML = '';
                 data.items.forEach(item => {
                     const li = document.createElement('li');
-                    li.textContent = `${item.name}`;
+                    li.className = 'inventory-item';
+                    li.innerHTML = `
+                        <span>${item.name}</span>
+                        <button class="delete-btn" data-item="${item.name}">×</button>
+                    `;
                     inventoryList.appendChild(li);
                 });
+               
             } catch (error) {
                 inventoryList.innerHTML = `<li>Error: ${error.message}</li>`;
             }
         }
+
+
 
         form.addEventListener('submit', async function(event) {
             event.preventDefault();
             const formData = new FormData(form);
             
             try {
-
                 foodList.innerHTML = '<li>Analyzing image...</li>';
                 const response = await fetch('/analyze-image', {
                     method: 'POST',
@@ -114,7 +166,6 @@
                     foodList.appendChild(li);
                 });
 
-                // Display flash message if available
                 if (data.message) {
                     const flashMessage = document.createElement('div');
                     flashMessage.className = 'flash-message';
@@ -128,7 +179,7 @@
             await fetchInventory();
         });
 
-        document.addEventListener('DOMContentLoaded', fetchInventory);
+       
     </script>
 </body>
 </html>
