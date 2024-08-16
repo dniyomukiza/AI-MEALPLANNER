@@ -237,28 +237,35 @@ app.get('/inventory', isAuthenticated, async (req, res) => {
   }
 });
 
+
 app.post('/delete_item', isAuthenticated, async (req, res) => {
   try {
-
     // Get the item to delete from the query string
     const { item } = req.query;
+
+    if (!item) {
+      return res.status(400).json({ error: 'Item name is required' });
+    }
 
     // Find the user's food inventory
     const inventory = await FoodInventory.findOne({ userId: req.session.userId });
 
     if (!inventory) {
-      return res.status(404).send('Inventory not found');
+      return res.status(404).json({ error: 'Inventory not found' });
     }
 
-    // Remove the item from the inventory
+    // Remove the item from the inventory by filtering out the item to delete
     inventory.items = inventory.items.filter(i => i.name !== item);
 
     // Save the updated inventory
     await inventory.save();
-    res.send('Item deleted successfully');
+    
+    // Send a success response
+    res.json({ message: 'Item deleted successfully' });
+
   } catch (error) {
     console.error('Error deleting item:', error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
