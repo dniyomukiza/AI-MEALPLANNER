@@ -136,6 +136,7 @@ app.post('/login', async (req, res) => {
         req.session.userId = user._id; //
         res.redirect('/upload_photo'); 
       } else {
+        req.flash('success', 'Incorrect password!');
         res.redirect(`/reset?username=${encodeURIComponent(req.body.username)}`); // Redirect to reset if password is incorrect
       }
     } else {
@@ -376,7 +377,7 @@ app.route('/reset')
         { resetToken: token },
         { password: hashedPassword, resetToken: null, resetTokenExpiry: null }
       );
-
+      req.flash('success', 'Your password has been updated!');
       // Redirect to login page
       res.redirect('/login');
     } catch (error) {
