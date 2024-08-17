@@ -10,7 +10,7 @@
     <div class="container">
         <div class="form-container">
 
-            <!-- Loop through the messages and display them -->
+            <!-- Loop through the messages and display error messages-->
             {{#each messages}}
                 <div class="alert alert-danger">
                     {{this}}
@@ -22,7 +22,11 @@
                 <input type="password" placeholder="Password" name="password" required>
                 <button type="submit" class="sub">Login</button>
             </form>
-            <a href="/signup" class="signup-link">Create account</a>
+            <a href="/signup" style="text-decoration: none; color: rgb(211, 138, 60);">Create account</a>
+<span style="margin: 0 10px;">|</span>
+<a href="/reset" style="text-decoration: none; color: rgb(211, 138, 60);">Reset Password</a>
+
+
         </div>
     </div>
 </body>

@@ -7,6 +7,12 @@
 </head>
 <body>
     <div class="container">
+        <!-- Loop through the messages and display error messages -->
+            {{#each messages}}
+                <div class="alert alert-danger">
+                    {{this}}
+                </div>
+            {{/each}}
         <h2>Signup</h2>
         <form action="/signup" method="POST">
             <div class="form-group">
