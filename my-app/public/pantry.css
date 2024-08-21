@@ -1,0 +1,145 @@
+
+body {
+    font-family: Arial, sans-serif;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1, h2 {
+    color: #333;
+}
+
+#uploadForm {
+    margin-bottom: 20px;
+}
+
+#result, #inventory {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.scroll-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+#foodList, #inventoryList {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+#foodList li, .inventory-item {
+    margin-bottom: 5px;
+    padding: 5px 10px;
+    background-color: #f0f0f0;
+    border-radius: 3px;
+    position: relative; 
+}
+
+.flash-message {
+    padding: 15px;
+    background-color: #28a745;
+    border: 1px solid #218838;
+    border-radius: 5px;
+    color: white;
+    margin-bottom: 20px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.delete-btn {
+    background-color:  #007BFF; 
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute; 
+    right: 10px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+}
+
+button, input[type="file"] {
+    background-color: #007BFF; 
+    color: white; 
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+button:hover, input[type="file"]:hover {
+    background-color: #0056b3; 
+    transform: translateY(-2px);
+}
+
+button:before, input[type="file"]:before {
+    content: '';
+    margin-right: 8px;
+}
+
+#imageInput:before {
+    content: '\1F4F7'; 
+}
+
+button[type="submit"]:before {
+    content: '\1F50D'; 
+}
+
+.navbar {
+    padding: 10px;
+    border-radius: 5px;
+    text-align: right;
+    margin-bottom: 20px;
+}
+
+.navbar a {
+    color: #007BFF;
+    text-decoration: none;
+    font-size: 16px;
+    transition: color 0.3s ease;
+}
+
+.navbar a:hover {
+    color: #007BFF;
+}
+
+.scroll-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+    background-color: #007BFF;
+    border-radius: 5px;
+}
+
+.scroll-container::-webkit-scrollbar-track {
+    background-color: #f1f1f1;
+    border-radius: 5px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#foodList li, .flash-message {
+    animation: fadeIn 0.5s ease-in-out;
+}
