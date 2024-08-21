@@ -14,7 +14,7 @@ require('dotenv').config();
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 const saltRounds = 10;
-
+const axios = require('axios');
 
 //The session secret is used to create a hash (or signature) of the session ID. 
 app.use(session({
@@ -202,6 +202,82 @@ function fileToGenerativePart(filePath, mimeType) {
   };
 }
 
+app.get('/generate_meals', async (req, res) => {
+  try {
+
+    // Find the user's food inventory
+    const inventory = await FoodInventory.findOne({ userId: req.session.userId });
+
+    console.log(inventory);
+
+    // If the inventory doesn't exist, initialize an empty array
+    const items = inventory ? inventory.items : [];
+
+    // Extract the 'name' attribute from each item
+    const ingredientList = items.map(item => item.name);
+
+    // Make a request to the Spoonacular API
+    const response = await axios.get(`https://api.spoonacular.com/recipes/findByIngredients`, {
+      params: {
+        ingredients: ingredientList.join(','),
+        apiKey: process.env.SPOONACULAR_KEY,
+        number: 10
+      }
+    });
+
+    // Get the recipes from the response
+    const recipes = response.data;
+
+    // Function to get recipe instructions
+    const getRecipeInstructions = async (recipeId) => {
+      try {
+        const recipeResponse = await axios.get(`https://api.spoonacular.com/recipes/${recipeId}/information`, {
+          params: {
+            apiKey: process.env.SPOONACULAR_KEY
+          }
+        });
+        return recipeResponse.data.instructions;
+      } catch (error) {
+        console.error('Error retrieving recipe instructions:', error);
+        return 'Instructions not available';
+      }
+    };
+
+   
+    // Use Promise.all to wait for all instructions
+    const mealsWithInstructions = await Promise.all(recipes.map(async (meal) => {
+
+      // Get the instructions for each recipe
+      const instructions = await getRecipeInstructions(meal.id);
+
+      // Return a structured object with the meal data
+      return {
+        id: meal.id,
+        title: meal.title,
+        image: meal.image,
+        usedIngredients: meal.usedIngredients.map(ingredient => ({
+          name: ingredient.name,
+          amount: ingredient.amount,
+          unit: ingredient.unit
+        })),
+        missedIngredients: meal.missedIngredients.map(ingredient => ({
+          name: ingredient.name,
+          amount: ingredient.amount,
+          unit: ingredient.unit
+        })),
+        instructions: instructions
+      };
+    }));
+
+    // Send the structured data to the front end
+    res.json({ meals: mealsWithInstructions });
+
+  } catch (error) {
+    console.error('Error retrieving recipes:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 // Lists the food items from the image and inserts them into the user's inventory
 app.post('/analyze-image', upload.single('image'), async (req, res) => {
   try {
@@ -209,10 +285,12 @@ app.post('/analyze-image', upload.single('image'), async (req, res) => {
       return res.status(400).json({ error: 'Please upload an image file.' });
     }
 
+    // Get the generative model
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
     const prompt = "What are the food items you see in this image? Split the food items by comma";
     const imageParts = [fileToGenerativePart(req.file.path, req.file.mimetype)];
 
+    // Generate content from the image
     const result = await model.generateContent([prompt, ...imageParts]);
     const response = await result.response;
     const text = response.text();
@@ -250,6 +328,7 @@ app.get('/inventory', isAuthenticated, async (req, res) => {
 
 app.post('/delete_item', isAuthenticated, async (req, res) => {
   try {
+
     // Get the item to delete from the query string
     const { item } = req.query;
 

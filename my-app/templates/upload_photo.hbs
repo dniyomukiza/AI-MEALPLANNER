@@ -28,6 +28,8 @@
         </div>
     </div>
 
+     <button id="generateMealsBtn">Generate Meals</button>
+     <div id="mealsContainer"></div>
     <script>
         document.addEventListener('DOMContentLoaded', fetchInventory);
 
@@ -125,6 +127,44 @@
 
             await fetchInventory();
         });
+
+          document.getElementById('generateMealsBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/generate_meals', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                console.log('Meals:', data.meals);
+
+                // Display the meals on the page
+                const mealsContainer = document.getElementById('mealsContainer');
+                mealsContainer.innerHTML = ''; // Clear previous meals
+
+                data.meals.forEach(meal => {
+                    const mealDiv = document.createElement('div');
+                    mealDiv.innerHTML = `
+                        <h3>${meal.title}</h3>
+                        <img src="${meal.image}" alt="${meal.title}" style="width:200px;">
+                        <p><strong>Used Ingredients:</strong> ${meal.usedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
+                        <p><strong>Missed Ingredients:</strong> ${meal.missedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
+                        <p><strong>Instructions:</strong> ${meal.instructions}</p>
+                    `;
+                    
+                    mealsContainer.appendChild(mealDiv);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
     </script>
 </body>
 </html>
