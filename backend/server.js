@@ -86,17 +86,17 @@ app.get('/upload_photo', (req, res) => {
 
 app.post('/signup', async (req, res) => {
   try {
-    const { username, password, user_email } = req.body;
+    const { username, password, user_email, health_conditions, health_goals } = req.body;
 
     // Normalize the username to lowercase for case-insensitive comparison
     const normalizedUsername = username.toLowerCase();
 
-    // Check if user already exists (case-insensitive search)
+    // Check if user already exists 
     const existingUser = await User.findOne({ username: normalizedUsername });
 
     if (existingUser) {
       req.flash('error', 'This user already exists. Please login or reset password');
-      return res.redirect('/login'); // Ensure this return statement exits the function
+      return res.redirect('/login'); //
     }
 
     // Hash the password
@@ -110,6 +110,15 @@ app.post('/signup', async (req, res) => {
     });
 
     await newUser.save();
+
+    // Create and save health data
+    const healthData = new Health({
+      userId: newUser._id,
+      health_cond: health_conditions || [],  
+      goal: health_goals || '' 
+    });
+
+    await healthData.save();
 
     // Set flash message and redirect to login page
     req.flash('success', 'Registration successful. Please log in.');
@@ -137,7 +146,7 @@ app.post('/login', async (req, res) => {
         res.redirect('/upload_photo'); 
       } else {
         req.flash('success', 'Incorrect password!');
-        res.redirect(`/reset?username=${encodeURIComponent(req.body.username)}`); // Redirect to reset if password is incorrect
+        res.redirect(`/reset?username=${encodeURIComponent(req.body.username)}`); 
       }
     } else {
       // Flash a message and redirect to the signup page if the user does not exist
