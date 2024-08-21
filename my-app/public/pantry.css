@@ -55,7 +55,7 @@ h1, h2 {
 }
 
 .delete-btn {
-    background-color:  #007BFF; 
+    background-color:  hsl(0, 77%, 36%); 
     color: white;
     border: none;
     border-radius: 50%;
@@ -134,6 +134,7 @@ button[type="submit"]:before {
     background-color: #f1f1f1;
     border-radius: 5px;
 }
+
 
 @keyframes fadeIn {
     from { opacity: 0; }
