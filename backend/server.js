@@ -86,7 +86,7 @@ app.get('/upload_photo', (req, res) => {
 
 app.post('/signup', async (req, res) => {
   try {
-    const { username, password, user_email, health_conditions, health_goals } = req.body;
+    const { username, password, user_email, food_intolerances, health_goals } = req.body;
 
     // Normalize the username to lowercase for case-insensitive comparison
     const normalizedUsername = username.toLowerCase();
@@ -114,7 +114,7 @@ app.post('/signup', async (req, res) => {
     // Create and save health data
     const healthData = new Health({
       userId: newUser._id,
-      health_cond: health_conditions || [],  
+      health_cond: food_intolerances || [],  
       goal: health_goals || '' 
     });
 
@@ -481,3 +481,99 @@ app.route('/reset')
     console.log(`Server is running on port ${PORT}`);
   });
   
+
+//Display form to user
+app.route('/filtered_meals')
+.get((req, res) => {
+  res.render('filtered'); 
+})
+
+app.get('/filter_meals', async (req, res) => {
+  try {
+    // Find the user's intolerances
+    const healthData = await Health.findOne({ userId: req.session.userId });
+
+    if (!healthData) {
+      console.log("No health data found for this user.");
+      return res.json({ meals: [], removed: [] }); // Return empty arrays if no data is found
+    }
+
+    // Extract the intolerances from healthData
+    const intoleranceArray = healthData.health_cond || [];
+
+    // Find the user's food inventory
+    const inventory = await FoodInventory.findOne({ userId: req.session.userId });
+
+    // If the inventory doesn't exist, initialize an empty array
+    const items = inventory ? inventory.items : [];
+
+    // Extract the 'name' attribute from each item
+    const ingredientList = items.map(item => item.name);
+
+    // Make a request to the Spoonacular API
+    const response = await axios.get(`https://api.spoonacular.com/recipes/findByIngredients`, {
+      params: {
+        ingredients: ingredientList.join(','),
+        apiKey: process.env.SPOONACULAR_KEY,
+        number: 10,
+        intolerances: intoleranceArray.join(",") // Add intolerances to API request
+      }
+    });
+
+    // Get the recipes from the response
+    const recipes = response.data;
+
+    // Function to get recipe instructions
+    const getRecipeInstructions = async (recipeId) => {
+      try {
+        const recipeResponse = await axios.get(`https://api.spoonacular.com/recipes/${recipeId}/information`, {
+          params: {
+            apiKey: process.env.SPOONACULAR_KEY
+          }
+        });
+        return recipeResponse.data.instructions;
+      } catch (error) {
+        console.error('Error retrieving recipe instructions:', error);
+        return 'Instructions not available';
+      }
+    };
+
+    // Use Promise.all to wait for all instructions
+    const mealsWithInstructions = await Promise.all(recipes.map(async (meal) => {
+      // Track removed intolerances
+      const removedIntolerances = intoleranceArray.filter(intolerance =>
+        meal.missedIngredients.some(ingredient => ingredient.name.toLowerCase().includes(intolerance.toLowerCase()))
+      );
+
+      // Get the instructions for each recipe
+      const instructions = await getRecipeInstructions(meal.id);
+
+      // Return a structured object with the meal data
+      return {
+        id: meal.id,
+        title: meal.title,
+        image: meal.image,
+        usedIngredients: meal.usedIngredients.map(ingredient => ({
+          name: ingredient.name,
+          amount: ingredient.amount,
+          unit: ingredient.unit
+        })),
+        missedIngredients: meal.missedIngredients.map(ingredient => ({
+          name: ingredient.name,
+          amount: ingredient.amount,
+          unit: ingredient.unit
+        })),
+        removedIntolerances: removedIntolerances.length > 0 ? removedIntolerances : ['None'],
+        instructions: instructions
+      };
+    }));
+
+    // Send the structured data to the front end
+    res.json({ meals: mealsWithInstructions, removedIntolerances: intoleranceArray });
+
+  } catch (error) {
+    console.error('Error retrieving recipes:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
