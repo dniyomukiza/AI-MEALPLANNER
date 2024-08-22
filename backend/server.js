@@ -522,7 +522,6 @@ app.get('/filter_meals', async (req, res) => {
 
     // Get the recipes from the response
     const recipes = response.data;
-
     // Function to get recipe instructions
     const getRecipeInstructions = async (recipeId) => {
       try {
