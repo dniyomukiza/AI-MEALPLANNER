@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="pantry.css"> <!-- Link to the external CSS file -->
+    <link rel="stylesheet" href="pantry.css"> 
 </head>
 <body>
     <nav class="navbar">
@@ -11,8 +11,10 @@
         <a href="/">Logout</a>
     </nav>
     <form id="uploadForm" enctype="multipart/form-data">
-        <input type="file" id="imageInput" name="image" accept="image/*" required>
-        <button type="submit">Analyze Image</button>
+        <div class="form-group">
+            <input type="file" id="imageInput" name="image" accept="image/*" required>
+            <button type="submit">Analyze Image</button>
+        </div>
     </form>
     <div id="result">
         <strong><p>Detected Items:</p></strong>
@@ -28,8 +30,14 @@
         </div>
     </div>
 
-     <button id="generateMealsBtn">Generate Meals</button>
-     <div id="mealsContainer"></div>
+    <!-- Button Container for horizontal alignment -->
+    <div id="buttonContainer">
+        <button id="filterMealsBtn">Filter Meals</button>
+        <button id="generateMealsBtn">Generate Meals</button>
+    </div>
+
+    <div id="mealsContainer"></div>
+
     <script>
         document.addEventListener('DOMContentLoaded', fetchInventory);
 
@@ -128,7 +136,7 @@
             await fetchInventory();
         });
 
-          document.getElementById('generateMealsBtn').addEventListener('click', async () => {
+        document.getElementById('generateMealsBtn').addEventListener('click', async () => {
             try {
                 const response = await fetch('/generate_meals', {
                     method: 'GET',
@@ -163,6 +171,10 @@
             } catch (error) {
                 console.error('Error:', error);
             }
+        });
+
+        document.getElementById('filterMealsBtn').addEventListener('click', () => {
+            window.location.href = '/filtered_meals';
         });
 
     </script>

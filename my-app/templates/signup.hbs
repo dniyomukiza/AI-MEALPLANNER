@@ -13,25 +13,27 @@
                     {{this}}
                 </div>
             {{/each}}
-        <h2>Signup</h2>
         <form action="/signup" method="POST">
             <div class="form-group">
                 <input type="text" placeholder="Username" name="username" >
                 <input type="password" placeholder="Password" name="password" >
 
-                <label for="health-conditions">Health conditions</label>
-                <div class="health-conditions">
-                    <label><input type="checkbox" name="health_conditions[]" value="None"> None</label>
-                    <label><input type="checkbox" name="health_conditions[]" value="Diabetes"> Diabetes</label>
-                    <label><input type="checkbox" name="health_conditions[]" value="High blood pressure"> High blood pressure</label>
-                    <label><input type="checkbox" name="health_conditions[]" value="Celiac disease"> Celiac disease</label>
-                    <label><input type="checkbox" name="health_conditions[]" value="High cholesterol"> High cholesterol</label>
-                    <label><input type="checkbox" name="health_conditions[]" value="Osteoporosis"> Osteoporosis</label>
-                    <label><input type="checkbox" name="health_conditions[]" value="Irritable bowel syndrome"> Irritable bowel syndrome</label>
-                    <label><input type="checkbox" name="health_conditions[]" value="Anemia"> Anemia</label>
-                    <label><input type="checkbox" name="health_conditions[]" value="Kidney Disease"> Kidney Disease</label>
-                    <label><input type="checkbox" name="health_conditions[]" value="Gout"> Gout</label>
-                </div>
+                <label for="food-intolerances">Food intolerances</label>
+               <div class="food-intolerances">
+                <label><input type="checkbox" name="food_intolerances[]" value="None"> None</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Dairy"> Dairy</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Egg"> Egg</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Gluten"> Gluten</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Grain"> Grain</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Peanut"> Peanut</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Seafood"> Seafood</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Sesame"> Sesame</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Shellfish"> Shellfish</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Soy"> Soy</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Sulfite"> Sulfite</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Tree Nut"> Tree Nut</label>
+                <label><input type="checkbox" name="food_intolerances[]" value="Wheat"> Wheat</label>
+               </div>
 
                 <label for="health-goals">Health goal</label>
                 <div class="health-goals">

@@ -1,146 +1,132 @@
-
 body {
-    font-family: Arial, sans-serif;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-h1, h2 {
+   
+    background-size: cover;
+    background-position: center;
     color: #333;
-}
-
-#uploadForm {
-    margin-bottom: 20px;
-}
-
-#result, #inventory {
-    margin-top: 20px;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.scroll-container {
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 10px;
-}
-
-#foodList, #inventoryList {
-    list-style-type: none;
-    padding-left: 0;
     margin: 0;
-}
-
-#foodList li, .inventory-item {
-    margin-bottom: 5px;
-    padding: 5px 10px;
-    background-color: #f0f0f0;
-    border-radius: 3px;
-    position: relative; 
-}
-
-.flash-message {
-    padding: 15px;
-    background-color: #28a745;
-    border: 1px solid #218838;
-    border-radius: 5px;
-    color: white;
-    margin-bottom: 20px;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.delete-btn {
-    background-color:  hsl(0, 77%, 36%); 
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
-    cursor: pointer;
+    font-family: Arial, sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    position: absolute; 
-    right: 10px; 
-    top: 50%; 
-    transform: translateY(-50%); 
-}
-
-button, input[type="file"] {
-    background-color: #007BFF; 
-    color: white; 
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-}
-
-button:hover, input[type="file"]:hover {
-    background-color: #0056b3; 
-    transform: translateY(-2px);
-}
-
-button:before, input[type="file"]:before {
-    content: '';
-    margin-right: 8px;
-}
-
-#imageInput:before {
-    content: '\1F4F7'; 
-}
-
-button[type="submit"]:before {
-    content: '\1F50D'; 
 }
 
 .navbar {
-    padding: 10px;
-    border-radius: 5px;
-    text-align: right;
-    margin-bottom: 20px;
+    color: black;
+    padding: 10px; 
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.8); 
+    box-sizing: border-box; 
+}
+
+.navbar h1 {
+    margin: 0;
+    padding: 0;
 }
 
 .navbar a {
-    color: #007BFF;
+    color: black;
     text-decoration: none;
-    font-size: 16px;
-    transition: color 0.3s ease;
+    font-weight: bold;
+    padding: 0 10px;
 }
 
 .navbar a:hover {
-    color: #007BFF;
+    text-decoration: underline;
 }
 
-.scroll-container::-webkit-scrollbar {
-    width: 8px;
+#uploadForm {
+    margin-top: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.scroll-container::-webkit-scrollbar-thumb {
-    background-color: #007BFF;
+.form-group {
+    display: flex;
+    align-items: center;
+    gap: 10px; 
+}
+
+#uploadForm input[type="file"] {
+    margin-bottom: 0;
+}
+
+#uploadForm button {
+    background-color:  rgba(203, 199, 199, 0.548);
+    color:black;
+    border: none;
+    padding: 5px 5px;
+    cursor: pointer;
     border-radius: 5px;
 }
 
-.scroll-container::-webkit-scrollbar-track {
-    background-color: #f1f1f1;
+#uploadForm button:hover {
+    background-color: #45a049;
+}
+
+#result, #inventory {
+    width: 80%;
+    max-width: 800px;
+    margin: 20px 0;
+}
+
+#result, #inventory {
+    background-color: rgba(255, 255, 255, 0.8); 
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.scroll-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    background-color: #fff;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    margin: 5px 0;
+    padding: 10px;
+    border: 1px solid #ddd;
     border-radius: 5px;
 }
 
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+.inventory-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-#foodList li, .flash-message {
-    animation: fadeIn 0.5s ease-in-out;
+.delete-btn {
+    background: none;
+    border: none;
+    color: red;
+    font-size: 16px;
+    cursor: pointer;
 }
+
+.delete-btn:hover {
+    color: darkred;
+}
+
+.flash-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
