@@ -43,7 +43,7 @@
                         <img src="${meal.image}" alt="${meal.title}" style="width:200px;">
                         <p><strong>Used Ingredients:</strong> ${meal.usedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
                         <p><strong>Missed Ingredients:</strong> ${meal.missedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
-                        <p><strong>Removed Intolerances:</strong> ${meal.removedIntolerances.join(', ')}</p>
+                
                         <p><strong>Instructions:</strong> ${meal.instructions}</p>
                     `;
                     

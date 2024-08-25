@@ -68,6 +68,109 @@ app.get('/', (req, res) => {
   res.render('home');
 });
 
+app.get('/guest', (req, res) => {
+  res.render('guest');
+});
+
+// Modify the analyze-image route to work for guests
+app.post('/analyze-image-guest', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Please upload an image file.' });
+    }
+
+    // Get the generative model
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const prompt = "What are the food items you see in this image? Split the food items by comma";
+    const imageParts = [fileToGenerativePart(req.file.path, req.file.mimetype)];
+
+    // Generate content from the image
+    const result = await model.generateContent([prompt, ...imageParts]);
+    const response = await result.response;
+    const text = response.text();
+
+    fs.unlinkSync(req.file.path);
+
+    res.json({ items: text, message: 'Items detected' });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Image analysis failed.',
+      details: error.message
+    });
+  }
+});
+
+// Modify the generate_meals route to work for guests
+app.post('/generate_meals_guest', async (req, res) => {
+  try {
+    const { ingredients } = req.body;
+
+    if (!ingredients || !Array.isArray(ingredients)) {
+      return res.status(400).json({ error: 'Invalid ingredients list' });
+    }
+
+    // Make a request to the Spoonacular API
+    const response = await axios.get(`https://api.spoonacular.com/recipes/findByIngredients`, {
+      params: {
+        ingredients: ingredients.join(','),
+        apiKey: process.env.SPOONACULAR_KEY,
+        number: 5
+      }
+    });
+
+    // Get the recipes from the response
+    const recipes = response.data;
+
+    // Function to get recipe instructions
+    const getRecipeInstructions = async (recipeId) => {
+      try {
+        const recipeResponse = await axios.get(`https://api.spoonacular.com/recipes/${recipeId}/information`, {
+          params: {
+            apiKey: process.env.SPOONACULAR_KEY
+          }
+        });
+        return recipeResponse.data.instructions;
+      } catch (error) {
+        console.error('Error retrieving recipe instructions:', error);
+        return 'Instructions not available';
+      }
+    };
+
+    // Use Promise.all to wait for all instructions
+    const mealsWithInstructions = await Promise.all(recipes.map(async (meal) => {
+      // Get the instructions for each recipe
+      const instructions = await getRecipeInstructions(meal.id);
+
+      // Return a structured object with the meal data
+      return {
+        id: meal.id,
+        title: meal.title,
+        image: meal.image,
+        usedIngredients: meal.usedIngredients.map(ingredient => ({
+          name: ingredient.name,
+          amount: ingredient.amount,
+          unit: ingredient.unit
+        })),
+        missedIngredients: meal.missedIngredients.map(ingredient => ({
+          name: ingredient.name,
+          amount: ingredient.amount,
+          unit: ingredient.unit
+        })),
+        instructions: instructions
+      };
+    }));
+
+    // Sort the meals by the number of missed ingredients
+    mealsWithInstructions.sort((a, b) => a.missedIngredients.length - b.missedIngredients.length);
+
+    // Send the structured data to the front end
+    res.json({ meals: mealsWithInstructions });
+  } catch (error) {
+    console.error('Error retrieving recipes:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 // Display login page directly when accessing root
 app.get('/login', (req, res) => {
   res.render('login');
@@ -515,7 +618,7 @@ app.get('/filter_meals', async (req, res) => {
       params: {
         ingredients: ingredientList.join(','),
         apiKey: process.env.SPOONACULAR_KEY,
-        number: 10,
+        number: 5,
         intolerances: intoleranceArray.join(",") // Add intolerances to API request
       }
     });
@@ -566,6 +669,9 @@ app.get('/filter_meals', async (req, res) => {
         instructions: instructions
       };
     }));
+
+    // Sort the meals by the number of missed ingredients
+    mealsWithInstructions.sort((a, b) => a.missedIngredients.length - b.missedIngredients.length);
 
     // Send the structured data to the front end
     res.json({ meals: mealsWithInstructions, removedIntolerances: intoleranceArray });

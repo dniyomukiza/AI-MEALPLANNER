@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guest Food Analyzer</title>
+    <link rel="stylesheet" href="pantry.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1>Guest Food Analyzer</h1>
+        <a href="/">Home</a>
+    </nav>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <input type="file" id="imageInput" name="image" accept="image/*" required>
+            <button type="submit">Analyze Image</button>
+        </div>
+    </form>
+    <div id="result">
+        <strong><p>Detected Items:</p></strong>
+        <div class="scroll-container">
+            <ul id="foodList"></ul>
+        </div>
+    </div>
+
+    <div id="inventory">
+        <strong><p>Temporary Inventory</p></strong>
+        <div class="scroll-container">
+            <ul id="inventoryList"></ul>
+        </div>
+    </div>
+
+    <div id="buttonContainer">
+        <button id="generateMealsBtn">Generate Meals</button>
+    </div>
+
+    <div id="mealsContainer"></div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const foodList = document.getElementById('foodList');
+        const inventoryList = document.getElementById('inventoryList');
+        const generateMealsBtn = document.getElementById('generateMealsBtn');
+        const mealsContainer = document.getElementById('mealsContainer');
+        let tempInventory = [];
+
+        // Function to add an item to the inventory
+        function addItemToInventory(item) {
+            // Create a list item for each food item
+            const li = document.createElement('li');
+
+            // Set the inner HTML of the list item
+            li.innerHTML = `
+                <span>${item}</span>
+                <button class="delete-btn">×</button>
+            `;
+
+            // Add an event listener to the delete button
+            li.querySelector('.delete-btn').addEventListener('click', () => deleteItem(item, li));
+
+            // Append the list item to the inventory list
+            inventoryList.appendChild(li);
+
+            // Add the item to the temporary inventory
+            tempInventory.push(item);
+        }
+
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(form);
+            
+            try {
+                foodList.innerHTML = '<li>Analyzing image...</li>';
+                const response = await fetch('/analyze-image-guest', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Image analysis failed');
+                }
+                
+                const data = await response.json();
+                const foodItems = data.items.split(',').map(item => item.trim());
+                
+                foodList.innerHTML = '';
+                foodItems.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    foodList.appendChild(li);
+                });
+                
+                foodItems.forEach(item => {
+                    addItemToInventory(item);  // Use the new function to add items
+                });
+                
+                if (data.message) {
+                    const flashMessage = document.createElement('div');
+                    flashMessage.className = 'flash-message';
+                    flashMessage.textContent = data.message;
+                    document.getElementById('result').prepend(flashMessage);
+                }
+            } catch (error) {
+                foodList.innerHTML = `<li>Error: ${error.message}</li>`;
+            }
+        });
+
+        generateMealsBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/generate_meals_guest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ingredients: tempInventory })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                mealsContainer.innerHTML = ''; // Clear previous meals
+
+                data.meals.forEach(meal => {
+                    const mealDiv = document.createElement('div');
+                    mealDiv.innerHTML = `
+                        <h3>${meal.title}</h3>
+                        <img src="${meal.image}" alt="${meal.title}" style="width:200px;">
+                        <p><strong>Used Ingredients:</strong> ${meal.usedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
+                        <p><strong>Missed Ingredients:</strong> ${meal.missedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
+                        <p><strong>Instructions:</strong> ${meal.instructions}</p>
+                    `;
+                    
+                    mealsContainer.appendChild(mealDiv);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                mealsContainer.innerHTML = `<p>Error generating meals: ${error.message}</p>`;
+            }
+        });
+
+        // Function to delete item from inventory
+        function deleteItem(item, listItem) {
+            tempInventory = tempInventory.filter(i => i !== item); // Remove item from inventory array
+            inventoryList.removeChild(listItem); // Remove item from the list in UI
+        }
+    </script>
+</body>
+</html>
