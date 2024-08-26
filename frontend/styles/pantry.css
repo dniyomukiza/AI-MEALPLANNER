@@ -122,8 +122,8 @@ li {
 }
 
 .flash-message {
-    background-color: #f8d7da;
-    color: #721c24;
+    background-color: rgba(255, 255, 255, 0.8); 
+    color: green;
     padding: 10px;
     border: 1px solid #f5c6cb;
     border-radius: 5px;
