@@ -49,11 +49,11 @@ const transporter = nodemailer.createTransport({
 
 
 // Path to my-app/templates directory
-const templatePath = path.join(__dirname, '../my-app/templates');
+const templatePath = path.join(__dirname, '../frontend/templates');
 
 // Setting up static files and view engine
-app.use('/images', express.static(path.join(__dirname, '../my-app/images')));
-app.use(express.static(path.join(__dirname, '../my-app/public')));
+app.use('/images', express.static(path.join(__dirname, '../frontend/images')));
+app.use(express.static(path.join(__dirname, '../frontend/styles')));
 app.set('view engine', 'hbs');
 app.set('views', templatePath);
 
@@ -222,9 +222,11 @@ app.post('/signup', async (req, res) => {
     });
 
     await healthData.save();
+    console.log('Food Intolerances:', healthData.health_cond);
 
     // Set flash message and redirect to login page
     req.flash('success', 'Registration successful. Please log in.');
+  
     return res.redirect('/login'); // Ensure this return statement exits the function
   } catch (error) {
     console.error('Error during signup:', error);
@@ -371,6 +373,9 @@ app.get('/generate_meals', async (req, res) => {
         instructions: instructions
       };
     }));
+
+    // Sort the meals by the number of missed ingredients
+    mealsWithInstructions.sort((a, b) => a.missedIngredients.length - b.missedIngredients.length);
 
     // Send the structured data to the front end
     res.json({ meals: mealsWithInstructions });
@@ -612,6 +617,7 @@ app.get('/filter_meals', async (req, res) => {
 
     // Extract the 'name' attribute from each item
     const ingredientList = items.map(item => item.name);
+    console.log(intoleranceArray);
 
     // Make a request to the Spoonacular API
     const response = await axios.get(`https://api.spoonacular.com/recipes/findByIngredients`, {
