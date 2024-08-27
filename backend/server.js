@@ -73,6 +73,27 @@ app.get('/guest', (req, res) => {
   res.render('guest');
 });
 
+// Display login page directly when accessing root
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
+// Display signup page directly when accessing root
+app.get('/signup', (req, res) => {
+  res.render('signup');
+});
+
+// Display the user's inventory
+app.get('/upload_photo', async (req, res) => {
+
+  // Fetch the user data from a database or session
+  const user = await User.findById(req.session.userId); 
+
+  // Render the template with the user context
+  res.render('upload_photo', { user });
+});
+
+
 // Modify the analyze-image route to work for guests
 app.post('/analyze-image-guest', upload.single('image'), async (req, res) => {
   try {
@@ -188,24 +209,6 @@ app.post('/generate_meals_guest', async (req, res) => {
   }
 });
 
-// Display login page directly when accessing root
-app.get('/login', (req, res) => {
-  res.render('login');
-});
-
-// Display signup page directly when accessing root
-app.get('/signup', (req, res) => {
-  res.render('signup');
-});
-
-// Display the user's inventory
-app.get('/upload_photo', async (req, res) => {
-  // Example: Fetch the user data from a database or session
-  const user = await User.findById(req.session.userId); 
-
-  // Render the template with the user context
-  res.render('upload_photo', { user });
-});
 
 
 
@@ -720,3 +723,77 @@ app.get('/filter_meals', async (req, res) => {
   }
 });
 
+
+// Display the user's inventory
+app.get('/meal_plan', isAuthenticated, async (req, res) => {
+  try {
+    
+    // Find the user's food inventory
+    const inventory = await FoodInventory.findOne({ userId: req.session.userId });
+    const items = inventory ? inventory.items : [];
+    const ingredientList = items.map(item => item.name).join(',');
+
+    // Fetch user health data for dietary restrictions
+    const healthData = await Health.findOne({ userId: req.session.userId });
+    let intolerances = healthData ? healthData.health_cond : [];
+    intolerances = intolerances.length > 0 ? intolerances.join(',') : '';
+
+    // Make a request to the Spoonacular API to find recipes by ingredients
+    const recipesResponse = await axios.get('https://api.spoonacular.com/recipes/findByIngredients', {
+      params: {
+        ingredients: ingredientList,
+        apiKey: process.env.SPOONACULAR_KEY,
+        number: 10,
+        intolerances: intolerances
+      }
+    });
+
+    // Get the recipes from the response
+    const recipes = recipesResponse.data;
+
+    // Example of selecting recipes for a meal plan
+    const selectedRecipes = recipes.slice(0, 3);
+
+    // Extract used ingredients from selected recipes
+    const usedIngredients = new Set();
+    selectedRecipes.forEach(recipe => {
+      if (recipe.usedIngredients && Array.isArray(recipe.usedIngredients)) {
+        recipe.usedIngredients.forEach(ingredient => {
+          if (ingredient && ingredient.name) {
+            usedIngredients.add(ingredient.name);
+          }
+        });
+      }
+    });
+
+    console.log('Used Ingredients:', usedIngredients);
+
+    // Update inventory to remove used ingredients
+    if (usedIngredients.size > 0) {
+      await FoodInventory.updateOne(
+        { userId: req.session.userId },
+        { $pull: { items: { name: { $in: Array.from(usedIngredients) } } } }
+      );
+    }
+
+    // Organize recipes into a meal plan
+    const mealPlan = {
+      breakfast: selectedRecipes.slice(0, 1),
+      lunch: selectedRecipes.slice(1, 2),
+      dinner: selectedRecipes.slice(2, 3)
+    };
+
+    // Ensure each meal has at least one recipe
+    if (mealPlan.breakfast.length === 0) mealPlan.breakfast = [null];
+    if (mealPlan.lunch.length === 0) mealPlan.lunch = [null];
+    if (mealPlan.dinner.length === 0) mealPlan.dinner = [null];
+
+    console.log('Meal Plan:', mealPlan);
+
+    // Return the meal plan to the client
+    res.json({ mealPlan });
+  } catch (error) {
+    console.error('Error generating meal plan:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+});

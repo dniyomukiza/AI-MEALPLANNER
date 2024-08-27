@@ -7,15 +7,76 @@
     <title>Filtered Recipes</title>
 </head>
 <body>
-    <nav class="navbar">
-        <a href="/logout">Logout</a>
-        <button id="generateMealsBtn">View Recipes</button>
+     <nav class="navbar">
+        <a href="/upload_photo">Back to Inventory</a>
+        <button id="generateMealsBtn">Get Filtered Recipes</button>
+        <button id="generateMealPlan">Generate Meal Plan</button>
     </nav>
 
     
     <div id="mealsContainer"></div>
+    <div id="mealPlanContainer"></div>
 
     <script>
+          // Add event listener to the generateMealPlan button
+       document.getElementById('generateMealPlan').addEventListener('click', async () => {
+            try {
+
+                // Fetch the meal plan
+                const response = await fetch('/meal_plan', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                
+                const data = await response.json();
+                displayMealPlan(data.mealPlan);
+                console.log('Meal Plan:', data.mealPlan);
+            } catch (error) {
+                console.error('Error fetching meal plan:', error);
+            }
+        });
+
+         // Function to display the meal plan
+        function displayMealPlan(mealPlan) {
+            const mealPlanContainer = document.getElementById('mealPlanContainer');
+            mealPlanContainer.innerHTML = ''; // Clear previous meal plan
+
+            const mealTypes = ['breakfast', 'lunch', 'dinner'];
+            
+            mealTypes.forEach(mealType => {
+                const mealTypeDiv = document.createElement('div');
+                mealTypeDiv.className = 'meal-type';
+                mealTypeDiv.innerHTML = `<h2>${mealType.charAt(0).toUpperCase() + mealType.slice(1)}</h2>`;
+
+                mealPlan[mealType].forEach(meal => {
+                    if (meal) {
+                        const mealDiv = document.createElement('div');
+                        mealDiv.className = 'meal';
+                        mealDiv.innerHTML = `
+                            <h3>${meal.title}</h3>
+                            <img src="${meal.image}" alt="${meal.title}" style="width:200px;">
+                            <p><strong>Used Ingredients:</strong> ${meal.usedIngredients ? meal.usedIngredients.map(i => i.name).join(', ') : 'N/A'}</p>
+                            <p><strong>Missed Ingredients:</strong> ${meal.missedIngredients ? meal.missedIngredients.map(i => i.name).join(', ') : 'N/A'}</p>
+                        `;
+                        mealTypeDiv.appendChild(mealDiv);
+                    } else {
+                        mealTypeDiv.innerHTML += '<p>No meal planned</p>';
+                    }
+                });
+
+                mealPlanContainer.appendChild(mealTypeDiv);
+            });
+        }
+
+
+      
+        // Display the meals on the page
         document.getElementById('generateMealsBtn').addEventListener('click', async () => {
             try {
                 const response = await fetch('/filter_meals', {
