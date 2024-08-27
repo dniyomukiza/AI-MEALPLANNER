@@ -54,6 +54,7 @@ const templatePath = path.join(__dirname, '../frontend/templates');
 // Setting up static files and view engine
 app.use('/images', express.static(path.join(__dirname, '../frontend/images')));
 app.use(express.static(path.join(__dirname, '../frontend/styles')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.set('view engine', 'hbs');
 app.set('views', templatePath);
 
@@ -99,6 +100,22 @@ app.post('/analyze-image-guest', upload.single('image'), async (req, res) => {
     });
   }
 });
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = process.env.PROFILE_PATH || 'uploads'; // Fallback to 'uploads' if PROFILE_PATH is not set
+    cb(null, path.resolve(__dirname, uploadPath)); // Resolve to absolute path
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    const username = req.body.username || 'default'; // Use a default if username is not provided
+    cb(null, `${username}_photo${ext}`);
+  }
+});
+
+const upload_profile = multer({ storage: storage });
+
 
 // Modify the generate_meals route to work for guests
 app.post('/generate_meals_guest', async (req, res) => {
@@ -182,15 +199,21 @@ app.get('/signup', (req, res) => {
 });
 
 // Display the user's inventory
-app.get('/upload_photo', (req, res) => {
-  res.render('upload_photo');
+app.get('/upload_photo', async (req, res) => {
+  // Example: Fetch the user data from a database or session
+  const user = await User.findById(req.session.userId); 
+
+  // Render the template with the user context
+  res.render('upload_photo', { user });
 });
 
 
-app.post('/signup', async (req, res) => {
+
+app.post('/signup', upload.single('profile_picture'), async (req, res) => {
   try {
     const { username, password, user_email, food_intolerances, health_goals } = req.body;
-
+    const profilePicturePath = req.file ? req.file.filename : null;
+    console.log('File info:', req.file);
     // Normalize the username to lowercase for case-insensitive comparison
     const normalizedUsername = username.toLowerCase();
 
@@ -199,7 +222,7 @@ app.post('/signup', async (req, res) => {
 
     if (existingUser) {
       req.flash('error', 'This user already exists. Please login or reset password');
-      return res.redirect('/login'); //
+      return res.redirect('/login');
     }
 
     // Hash the password
@@ -209,7 +232,8 @@ app.post('/signup', async (req, res) => {
     const newUser = new User({
       username: normalizedUsername, // Save the username in lowercase
       password: hashedPassword,
-      user_email
+      user_email,
+      profile_picture: profilePicturePath // Save the profile picture path
     });
 
     await newUser.save();
@@ -217,8 +241,8 @@ app.post('/signup', async (req, res) => {
     // Create and save health data
     const healthData = new Health({
       userId: newUser._id,
-      health_cond: food_intolerances || [],  
-      goal: health_goals || '' 
+      health_cond: food_intolerances || [],
+      goal: health_goals || ''
     });
 
     await healthData.save();
@@ -226,7 +250,7 @@ app.post('/signup', async (req, res) => {
 
     // Set flash message and redirect to login page
     req.flash('success', 'Registration successful. Please log in.');
-  
+
     return res.redirect('/login'); // Ensure this return statement exits the function
   } catch (error) {
     console.error('Error during signup:', error);
@@ -591,10 +615,19 @@ app.route('/reset')
   
 
 //Display form to user
-app.route('/filtered_meals')
-.get((req, res) => {
-  res.render('filtered'); 
-})
+app.get('/filtered_meals', async (req, res) => {
+  try {
+    // Fetch the user's profile data
+    const user = await User.findById(req.session.userId);
+
+    // Render the template and pass the user object
+    res.render('filtered', { user: user });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 
 app.get('/filter_meals', async (req, res) => {
   try {
@@ -617,7 +650,6 @@ app.get('/filter_meals', async (req, res) => {
 
     // Extract the 'name' attribute from each item
     const ingredientList = items.map(item => item.name);
-    console.log(intoleranceArray);
 
     // Make a request to the Spoonacular API
     const response = await axios.get(`https://api.spoonacular.com/recipes/findByIngredients`, {
