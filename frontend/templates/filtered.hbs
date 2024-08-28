@@ -7,13 +7,19 @@
     <title>Filtered Recipes</title>
 </head>
 <body>
-     <nav class="navbar">
-        <a href="/upload_photo">Back to Inventory</a>
-        <button id="generateMealsBtn">Get Filtered Recipes</button>
-        <button id="generateMealPlan">Generate Meal Plan</button>
+    <nav class="navbar">
+        <div id="userProfile">
+            {{#if user.profile_picture}}
+                <img src="/uploads/{{user.profile_picture}}" alt="Profile Picture" id="profilePicture">
+                <a href="/" id="logoutLink">Logout</a>
+            {{else}}
+                <p></p>
+            {{/if}}
+        </div>
+        
+        <button id="generateMealsBtn">View Recipes</button>
     </nav>
 
-    
     <div id="mealsContainer"></div>
     <div id="mealPlanContainer"></div>
 
@@ -104,7 +110,6 @@
                         <img src="${meal.image}" alt="${meal.title}" style="width:200px;">
                         <p><strong>Used Ingredients:</strong> ${meal.usedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
                         <p><strong>Missed Ingredients:</strong> ${meal.missedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
-                
                         <p><strong>Instructions:</strong> ${meal.instructions}</p>
                     `;
                     
@@ -113,6 +118,12 @@
             } catch (error) {
                 console.error('Error:', error);
             }
+        });
+
+        // Toggle logout link visibility
+        document.getElementById('profilePicture').addEventListener('click', () => {
+            const logoutLink = document.getElementById('logoutLink');
+            logoutLink.style.display = logoutLink.style.display === 'block' ? 'none' : 'block';
         });
     </script>
 </body>

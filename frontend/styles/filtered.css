@@ -4,24 +4,14 @@ body {
     font-family: Arial, sans-serif;
 }
 
-/* Navbar styling */
 .navbar {
     background-image: url('/images/pic.jpg'); 
     color: white;
     padding: 10px;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-}
-
-.navbar a {
-    color: white;
-    text-decoration: none;
-    font-weight: bold;
-    margin-left: auto; 
-}
-
-.navbar a:hover {
-    text-decoration: underline;
+    position: relative;
 }
 
 #generateMealsBtn {
@@ -31,14 +21,54 @@ body {
     padding: 10px 20px;
     border-radius: 5px;
     cursor: pointer;
-    margin-right: 20px;
 }
 
 #generateMealsBtn:hover {
     background-color: #e68a00;
 }
 
-/* Meals container styling */
+#userProfile {
+    display: flex;
+    align-items: center;
+}
+
+#profilePicture {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-left: 10px;
+}
+
+#profilePicture:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+#logoutLink {
+    display: none;
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ddd;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    color: black;
+    font-weight: bold;
+    z-index: 1;
+}
+
+#logoutLink:hover {
+    background-color: #f0f0f0;
+}
+
+#profilePicture.showLogout + #logoutLink {
+    display: block;
+}
+
 #mealsContainer {
     margin: 20px auto;
     padding: 20px;
@@ -48,7 +78,6 @@ body {
     grid-gap: 20px;
 }
 
-/* Individual meal card styling */
 #mealsContainer div {
     background-color: white;
     border-radius: 8px;
@@ -77,7 +106,6 @@ body {
     color: #4CAF50;
 }
 
-/* Media Queries for responsiveness */
 @media (max-width: 768px) {
     .navbar {
         flex-direction: column;

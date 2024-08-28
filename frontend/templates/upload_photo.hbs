@@ -8,8 +8,17 @@
 <body>
     <nav class="navbar">
         <h1>Food Image Analyzer</h1>
-        <a href="/">Logout</a>
+    
+  <div id="userProfile">
+        {{#if user.profile_picture}}
+            <img src="/uploads/{{user.profile_picture}}" alt="Profile Picture" id="profilePicture">
+            <a href="/" id="logoutLink">Logout</a>
+        {{else}}
+            <p></p>
+        {{/if}}
+    </div>
     </nav>
+
     <form id="uploadForm" enctype="multipart/form-data">
         <div class="form-group">
             <input type="file" id="imageInput" name="image" accept="image/*" required>
@@ -39,6 +48,10 @@
     <div id="mealsContainer"></div>
 
     <script>
+          document.getElementById('profilePicture').addEventListener('click', function() {
+        this.classList.toggle('showLogout');
+    });
+
         document.addEventListener('DOMContentLoaded', fetchInventory);
 
         // Get references to the form and result elements

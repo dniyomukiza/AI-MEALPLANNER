@@ -1,5 +1,4 @@
 body {
-   
     background-size: cover;
     background-position: center;
     color: #333;
@@ -12,7 +11,7 @@ body {
 
 .navbar {
     color: black;
-    padding: 10px; 
+    padding: 10px;
     width: 100%;
     position: fixed;
     top: 0;
@@ -20,8 +19,9 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: rgba(255, 255, 255, 0.8); 
-    box-sizing: border-box; 
+    background-color: rgba(255, 255, 255, 0.8);
+    box-sizing: border-box;
+    z-index: 10; /* Ensure navbar is on top of other elements */
 }
 
 .navbar h1 {
@@ -29,15 +29,44 @@ body {
     padding: 0;
 }
 
-.navbar a {
-    color: black;
-    text-decoration: none;
-    font-weight: bold;
-    padding: 0 10px;
+#userProfile {
+    display: flex;
+    align-items: center;
 }
 
-.navbar a:hover {
-    text-decoration: underline;
+#profilePicture {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#profilePicture:hover {
+    background-color: black;
+}
+
+#logoutLink {
+    display: none;
+    position: absolute;
+    top: 40px;
+    right: 10px;
+    background-color: white;
+    border: 1px solid #ddd;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    color: black;
+    font-weight: bold;
+}
+
+#logoutLink:hover {
+    background-color: #f0f0f0;
+}
+
+#profilePicture.showLogout + #logoutLink {
+    display: block;
 }
 
 #uploadForm {
@@ -50,7 +79,7 @@ body {
 .form-group {
     display: flex;
     align-items: center;
-    gap: 10px; 
+    gap: 10px;
 }
 
 #uploadForm input[type="file"] {
@@ -58,8 +87,8 @@ body {
 }
 
 #uploadForm button {
-    background-color:  rgba(203, 199, 199, 0.548);
-    color:black;
+    background-color: rgba(203, 199, 199, 0.548);
+    color: black;
     border: none;
     padding: 5px 5px;
     cursor: pointer;
@@ -77,7 +106,7 @@ body {
 }
 
 #result, #inventory {
-    background-color: rgba(255, 255, 255, 0.8); 
+    background-color: rgba(255, 255, 255, 0.8);
     padding: 15px;
     border-radius: 10px;
 }
@@ -122,11 +151,10 @@ li {
 }
 
 .flash-message {
-    background-color: rgba(255, 255, 255, 0.8); 
+    background-color: rgba(255, 255, 255, 0.8);
     color: green;
     padding: 10px;
     border: 1px solid #f5c6cb;
     border-radius: 5px;
     margin-bottom: 10px;
 }
-
