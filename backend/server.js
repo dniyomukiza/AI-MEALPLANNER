@@ -683,6 +683,7 @@ app.get('/filter_meals', async (req, res) => {
 
     // Use Promise.all to wait for all instructions
     const mealsWithInstructions = await Promise.all(recipes.map(async (meal) => {
+
       // Track removed intolerances
       const removedIntolerances = intoleranceArray.filter(intolerance =>
         meal.missedIngredients.some(ingredient => ingredient.name.toLowerCase().includes(intolerance.toLowerCase()))
@@ -723,15 +724,13 @@ app.get('/filter_meals', async (req, res) => {
   }
 });
 
-
-// Display the user's inventory
 app.get('/meal_plan', isAuthenticated, async (req, res) => {
   try {
-    
     // Find the user's food inventory
     const inventory = await FoodInventory.findOne({ userId: req.session.userId });
     const items = inventory ? inventory.items : [];
-    const ingredientList = items.map(item => item.name).join(',');
+    const ingredientList = items.map(item => item.name);
+    const ingredientListString = ingredientList.join(',');
 
     // Fetch user health data for dietary restrictions
     const healthData = await Health.findOne({ userId: req.session.userId });
@@ -741,32 +740,83 @@ app.get('/meal_plan', isAuthenticated, async (req, res) => {
     // Make a request to the Spoonacular API to find recipes by ingredients
     const recipesResponse = await axios.get('https://api.spoonacular.com/recipes/findByIngredients', {
       params: {
-        ingredients: ingredientList,
+        ingredients: ingredientListString,
         apiKey: process.env.SPOONACULAR_KEY,
         number: 10,
         intolerances: intolerances
       }
     });
 
+    const getRecipeInstructions = async (recipeId) => {
+      try {
+        const recipeResponse = await axios.get(`https://api.spoonacular.com/recipes/${recipeId}/information`, {
+          params: {
+            apiKey: process.env.SPOONACULAR_KEY
+          }
+        });
+        return recipeResponse.data.instructions;
+      } catch (error) {
+        console.error('Error retrieving recipe instructions:', error);
+        return 'Instructions not available';
+      }
+    };
+
     // Get the recipes from the response
     const recipes = recipesResponse.data;
 
+    
+    // Use Promise.all to wait for all instructions
+     meals_with_instructions = await Promise.all(recipes.map(async (meal) => {
+
+      // Get the instructions for each recipe
+      const instructions = await getRecipeInstructions(meal.id);
+
+      // Return a structured object with the meal data
+      return {
+        id: meal.id,
+        title: meal.title,
+        image: meal.image,
+        usedIngredients: meal.usedIngredients.map(ingredient => ({
+          name: ingredient.name,
+          amount: ingredient.amount,
+          unit: ingredient.unit
+        })),
+
+        // Return the missed ingredients
+        missedIngredients: meal.missedIngredients.map(ingredient => ({
+          name: ingredient.name,
+          amount: ingredient.amount,
+          unit: ingredient.unit
+        })),
+        instructions: instructions
+      };
+    }));
+
     // Example of selecting recipes for a meal plan
-    const selectedRecipes = recipes.slice(0, 3);
+    meals_with_instructions = meals_with_instructions.slice(0, 3);
 
     // Extract used ingredients from selected recipes
     const usedIngredients = new Set();
-    selectedRecipes.forEach(recipe => {
+    meals_with_instructions.forEach(recipe => {
       if (recipe.usedIngredients && Array.isArray(recipe.usedIngredients)) {
         recipe.usedIngredients.forEach(ingredient => {
+
+          // Ensure the ingredient has a name before adding it to the set
           if (ingredient && ingredient.name) {
-            usedIngredients.add(ingredient.name);
+            usedIngredients.add(ingredient.name.toLowerCase());
           }
         });
       }
     });
 
     console.log('Used Ingredients:', usedIngredients);
+
+    // Calculate leftover ingredients
+    const leftoverIngredients = ingredientList.filter(ingredient => 
+      !usedIngredients.has(ingredient.toLowerCase())
+    );
+
+    console.log('Leftover Ingredients:', leftoverIngredients);
 
     // Update inventory to remove used ingredients
     if (usedIngredients.size > 0) {
@@ -778,9 +828,9 @@ app.get('/meal_plan', isAuthenticated, async (req, res) => {
 
     // Organize recipes into a meal plan
     const mealPlan = {
-      breakfast: selectedRecipes.slice(0, 1),
-      lunch: selectedRecipes.slice(1, 2),
-      dinner: selectedRecipes.slice(2, 3)
+      breakfast: meals_with_instructions.slice(0, 1),
+      lunch:  meals_with_instructions.slice(1, 2),
+      dinner: meals_with_instructions.slice(2, 3)
     };
 
     // Ensure each meal has at least one recipe
@@ -790,8 +840,8 @@ app.get('/meal_plan', isAuthenticated, async (req, res) => {
 
     console.log('Meal Plan:', mealPlan);
 
-    // Return the meal plan to the client
-    res.json({ mealPlan });
+    // Return the meal plan and leftover ingredients to the client
+    res.json({ mealPlan, leftoverIngredients });
   } catch (error) {
     console.error('Error generating meal plan:', error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
