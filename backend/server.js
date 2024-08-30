@@ -16,6 +16,8 @@ const upload = multer({ dest: 'uploads/' });
 const saltRounds = 10;
 const axios = require('axios');
 
+const pluralize = require('pluralize');
+
 //The session secret is used to create a hash (or signature) of the session ID. 
 app.use(session({
   secret: process.env.SESSION_SECRET,
@@ -724,119 +726,85 @@ app.get('/filter_meals', async (req, res) => {
   }
 });
 
-app.get('/meal_plan', isAuthenticated, async (req, res) => {
+app.post('/meal_plan', isAuthenticated, async (req, res) => {
   try {
+    const num_of_days = parseInt(req.query.days) || 1;
+    
     // Find the user's food inventory
     const inventory = await FoodInventory.findOne({ userId: req.session.userId });
-    const items = inventory ? inventory.items : [];
-    const ingredientList = items.map(item => item.name);
-    const ingredientListString = ingredientList.join(',');
-
+    let availableIngredients = inventory ? inventory.items.map(item => pluralize.singular(item.name.toLowerCase())) : [];
+    
     // Fetch user health data for dietary restrictions
     const healthData = await Health.findOne({ userId: req.session.userId });
     let intolerances = healthData ? healthData.health_cond : [];
     intolerances = intolerances.length > 0 ? intolerances.join(',') : '';
 
-    // Make a request to the Spoonacular API to find recipes by ingredients
-    const recipesResponse = await axios.get('https://api.spoonacular.com/recipes/findByIngredients', {
-      params: {
-        ingredients: ingredientListString,
-        apiKey: process.env.SPOONACULAR_KEY,
-        number: 10,
-        intolerances: intolerances
-      }
-    });
+    // Create an array to store the meal plan
+    const mealPlan = [];
+    const totalUsedIngredients = new Set();
 
-    const getRecipeInstructions = async (recipeId) => {
-      try {
-        const recipeResponse = await axios.get(`https://api.spoonacular.com/recipes/${recipeId}/information`, {
+    for (let day = 0; day < num_of_days; day++) {
+      const dayMeals = {};
+      for (const mealType of ['breakfast', 'lunch', 'dinner']) {
+        
+        // Create a string of available ingredients
+        const ingredientListString = availableIngredients.join(',');
+
+        // Make a request to the Spoonacular API to find a recipe
+        const recipesResponse = await axios.get('https://api.spoonacular.com/recipes/findByIngredients', {
           params: {
-            apiKey: process.env.SPOONACULAR_KEY
+            ingredients: ingredientListString,
+            apiKey: process.env.SPOONACULAR_KEY,
+            number: 1,
+            type: mealType, // Add meal type to get more appropriate recipes
+            intolerances: intolerances
           }
         });
-        return recipeResponse.data.instructions;
-      } catch (error) {
-        console.error('Error retrieving recipe instructions:', error);
-        return 'Instructions not available';
+
+        if (recipesResponse.data.length > 0) {
+          const meal = recipesResponse.data[0];
+          const instructions = await getRecipeInstructions(meal.id);
+
+          // Add the meal to the day's meals
+          dayMeals[mealType] = {
+            id: meal.id,
+            title: meal.title,
+            image: meal.image,
+            usedIngredients: meal.usedIngredients.map(ingredient => ({
+              name: pluralize.singular(ingredient.name.toLowerCase()),
+              amount: ingredient.amount,
+              unit: ingredient.unit
+            })),
+            missedIngredients: meal.missedIngredients.map(ingredient => ({
+              name: pluralize.singular(ingredient.name.toLowerCase()),
+              amount: ingredient.amount,
+              unit: ingredient.unit
+            })),
+            instructions: instructions
+          };
+
+          // Update total used ingredients and available ingredients 
+          meal.usedIngredients.forEach(ingredient => {
+            const ingredientName = pluralize.singular(ingredient.name.toLowerCase());
+            totalUsedIngredients.add(ingredientName);
+
+            // Remove the used ingredient from availableIngredients
+            availableIngredients = availableIngredients.filter(item => 
+              item !== ingredientName
+            );
+          });
+
+          console.log('Available:', availableIngredients);
+          console.log('Used Ingredients:', Array.from(totalUsedIngredients));
+        } else {
+          dayMeals[mealType] = null;
+        }
       }
-    };
-
-    // Get the recipes from the response
-    const recipes = recipesResponse.data;
-
-    
-    // Use Promise.all to wait for all instructions
-     meals_with_instructions = await Promise.all(recipes.map(async (meal) => {
-
-      // Get the instructions for each recipe
-      const instructions = await getRecipeInstructions(meal.id);
-
-      // Return a structured object with the meal data
-      return {
-        id: meal.id,
-        title: meal.title,
-        image: meal.image,
-        usedIngredients: meal.usedIngredients.map(ingredient => ({
-          name: ingredient.name,
-          amount: ingredient.amount,
-          unit: ingredient.unit
-        })),
-
-        // Return the missed ingredients
-        missedIngredients: meal.missedIngredients.map(ingredient => ({
-          name: ingredient.name,
-          amount: ingredient.amount,
-          unit: ingredient.unit
-        })),
-        instructions: instructions
-      };
-    }));
-
-    // Example of selecting recipes for a meal plan
-    meals_with_instructions = meals_with_instructions.slice(0, 3);
-
-    // Extract used ingredients from selected recipes
-    const usedIngredients = new Set();
-    meals_with_instructions.forEach(recipe => {
-      if (recipe.usedIngredients && Array.isArray(recipe.usedIngredients)) {
-        recipe.usedIngredients.forEach(ingredient => {
-
-          // Ensure the ingredient has a name before adding it to the set
-          if (ingredient && ingredient.name) {
-            usedIngredients.add(ingredient.name.toLowerCase());
-          }
-        });
-      }
-    });
-
-    console.log('Used Ingredients:', usedIngredients);
-
-    // Calculate leftover ingredients
-    const leftoverIngredients = ingredientList.filter(ingredient => 
-      !usedIngredients.has(ingredient.toLowerCase())
-    );
-
-    console.log('Leftover Ingredients:', leftoverIngredients);
-
-    // Update inventory to remove used ingredients
-    if (usedIngredients.size > 0) {
-      await FoodInventory.updateOne(
-        { userId: req.session.userId },
-        { $pull: { items: { name: { $in: Array.from(usedIngredients) } } } }
-      );
+      mealPlan.push(dayMeals);
     }
 
-    // Organize recipes into a meal plan
-    const mealPlan = {
-      breakfast: meals_with_instructions.slice(0, 1),
-      lunch:  meals_with_instructions.slice(1, 2),
-      dinner: meals_with_instructions.slice(2, 3)
-    };
-
-    // Ensure each meal has at least one recipe
-    if (mealPlan.breakfast.length === 0) mealPlan.breakfast = [null];
-    if (mealPlan.lunch.length === 0) mealPlan.lunch = [null];
-    if (mealPlan.dinner.length === 0) mealPlan.dinner = [null];
+    // Convert the set of used ingredients to an array
+    const leftoverIngredients = availableIngredients;
 
     console.log('Meal Plan:', mealPlan);
 
@@ -847,3 +815,18 @@ app.get('/meal_plan', isAuthenticated, async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
+
+// Helper function to get recipe instructions
+async function getRecipeInstructions(recipeId) {
+  try {
+    const recipeResponse = await axios.get(`https://api.spoonacular.com/recipes/${recipeId}/information`, {
+      params: {
+        apiKey: process.env.SPOONACULAR_KEY
+      }
+    });
+    return recipeResponse.data.instructions;
+  } catch (error) {
+    console.error('Error retrieving recipe instructions:', error);
+    return 'Instructions not available';
+  }
+}

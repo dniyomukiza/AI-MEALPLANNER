@@ -18,47 +18,69 @@
         </div>
 
         <button id="generateMealsBtn">View Filtered Recipes</button>
+
         <button id="generateMealPlan">Generate Meal Plan</button>
+
+        <select id="mealPlanDays" style="width: 100px;">
+            <option value="1">1 day</option>
+            <option value="2">2 days</option>
+            <option value="3">3 days</option>
+            <option value="4">4 days</option>
+            <option value="5">5 days</option>
+            <option value="6">6 days</option>
+            <option value="7">7 days</option>
+        </select>
+
+
     </nav>
 
     <div id="mealsContainer"></div>
     <div id="mealPlanContainer"></div>
 
     <script>
-        document.getElementById('generateMealPlan').addEventListener('click', async () => {
-            try {
-                const response = await fetch('/meal_plan', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
+        
+    document.getElementById('generateMealPlan').addEventListener('click', async () => {
+    const days = document.getElementById('mealPlanDays').value;
 
-                const data = await response.json();
-                displayMealPlan(data);
-                console.log('Meal Plan:', data);
-            } catch (error) {
-                console.error('Error fetching meal plan:', error);
+    try {
+        const response = await fetch(`/meal_plan?days=${days}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
             }
         });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
 
-    // Function to display the meal plan
-    function displayMealPlan(data) {
-        const mealPlanContainer = document.getElementById('mealPlanContainer');
-        mealPlanContainer.innerHTML = ''; // Clear previous meal plan
+        const data = await response.json();
+        displayMealPlan(data);
+        console.log('Meal Plan:', data);
+    } catch (error) {
+        console.error('Error fetching meal plan:', error);
+    }   
+});
 
-        // Check if data.mealPlan exists
-        if (data.mealPlan) {
-            const meals = ['breakfast', 'lunch', 'dinner'];
-            
-            meals.forEach(mealType => {
-                const mealData = data.mealPlan[mealType][0]; // Get the first (and only) meal for this type
+// Display the meal plan on the page
+function displayMealPlan(data) {
+    const mealPlanContainer = document.getElementById('mealPlanContainer');
+    mealPlanContainer.innerHTML = '';
+
+    // Display the meal plan on the page
+    if (data.mealPlan && data.mealPlan.length > 0) {
+        data.mealPlan.forEach((dayMeals, index) => {
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'day-meal-plan';
+            dayDiv.innerHTML = `<h2>Day ${index + 1}</h2>`;
+
+            // Display breakfast, lunch, and dinner meals
+            ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+                const mealData = dayMeals[mealType];
+                const mealDiv = document.createElement('div');
+                mealDiv.className = 'meal';
+
+                // Display meal data
                 if (mealData) {
-                    const mealDiv = document.createElement('div');
-                    mealDiv.className = 'meal';
                     mealDiv.innerHTML = `
                         <h3>${mealType.charAt(0).toUpperCase() + mealType.slice(1)}: ${mealData.title}</h3>
                         <img src="${mealData.image}" alt="${mealData.title}" style="width:200px;">
@@ -66,28 +88,29 @@
                         <p><strong>Missed Ingredients:</strong> ${mealData.missedIngredients.map(i => i.name).join(', ')}</p>
                         <p><strong>Instructions:</strong> ${mealData.instructions}</p>
                     `;
-                    mealPlanContainer.appendChild(mealDiv);
                 } else {
-                    const mealDiv = document.createElement('div');
-                    mealDiv.className = 'meal';
                     mealDiv.innerHTML = `<h3>${mealType.charAt(0).toUpperCase() + mealType.slice(1)}: No recipe available</h3>`;
-                    mealPlanContainer.appendChild(mealDiv);
                 }
-            });
-        } else {
-            mealPlanContainer.innerHTML = '<p>No meal plan data available.</p>';
-        }
 
-        // Display leftover ingredients
-        if (data.leftoverIngredients && data.leftoverIngredients.length > 0) {
-            const leftoverDiv = document.createElement('div');
-            leftoverDiv.innerHTML = `
-                <h3>Leftover Ingredients</h3>
-                <p>${data.leftoverIngredients.join(', ')}</p>
-            `;
-            mealPlanContainer.appendChild(leftoverDiv);
-        }
+                dayDiv.appendChild(mealDiv);
+            });
+
+            mealPlanContainer.appendChild(dayDiv);
+        });
+    } else {
+        mealPlanContainer.innerHTML = '<p>No meal plan data available.</p>';
     }
+
+    // Display leftover ingredients
+    if (data.leftoverIngredients && data.leftoverIngredients.length > 0) {
+        const leftoverDiv = document.createElement('div');
+        leftoverDiv.innerHTML = `
+            <h3>Leftover Ingredients</h3>
+            <p>${data.leftoverIngredients.join(', ')}</p>
+        `;
+        mealPlanContainer.appendChild(leftoverDiv);
+    }
+}
 
         // Display the meals on the page
         document.getElementById('generateMealsBtn').addEventListener('click', async () => {
