@@ -87,7 +87,9 @@ function displayMealPlan(data) {
                         <p><strong>Used Ingredients:</strong> ${mealData.usedIngredients.map(i => i.name).join(', ')}</p>
                         <p><strong>Missed Ingredients:</strong> ${mealData.missedIngredients.map(i => i.name).join(', ')}</p>
                         <p><strong>Instructions:</strong> ${mealData.instructions}</p>
-                    `;
+                        <p><strong>Number of Ingredients Left:</strong> ${mealData.availableIngredients_Left.length}</p>
+                        <p><strong>Ingredients Left:</strong> ${mealData.availableIngredients_Left}</p>`;
+                        
                 } else {
                     mealDiv.innerHTML = `<h3>${mealType.charAt(0).toUpperCase() + mealType.slice(1)}: No recipe available</h3>`;
                 }
