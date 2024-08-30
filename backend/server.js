@@ -744,7 +744,9 @@ app.post('/meal_plan', isAuthenticated, async (req, res) => {
     const totalUsedIngredients = new Set();
     const usedRecipeIds = new Set();
 
+    // Loop through the number of days requested
     for (let day = 0; day < num_of_days; day++) {
+
       const dayMeals = {};
       for (const mealType of ['breakfast', 'lunch', 'dinner']) {
         // Create a string of available ingredients
@@ -755,7 +757,7 @@ app.post('/meal_plan', isAuthenticated, async (req, res) => {
           params: {
             ingredients: ingredientListString,
             apiKey: process.env.SPOONACULAR_KEY,
-            number: 5, // Increased to get more options
+            number: 1, // Increased to get more options
             type: mealType,
             intolerances: intolerances
           }
@@ -767,7 +769,7 @@ app.post('/meal_plan', isAuthenticated, async (req, res) => {
         if (availableRecipes.length > 0) {
           
           // Choose a random recipe from available ones
-          const meal = availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
+          const meal = availableRecipes[0];
           usedRecipeIds.add(meal.id);
 
           const instructions = await getRecipeInstructions(meal.id);
