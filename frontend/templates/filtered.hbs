@@ -16,109 +16,145 @@
                 <p></p>
             {{/if}}
         </div>
-
+        <!-- Generate Meal Plan Button -->
+        <button id="generateMealPlanBtn">Generate Meal Plan</button>
+        <!-- View Filtered Recipes Button -->
         <button id="generateMealsBtn">View Filtered Recipes</button>
+        <!-- Day Filter Dropdown -->
+        <div id="dayFilterContainer">
+            <label for="dayFilter">Filter by Day:</label>
+            <select id="dayFilter">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+            </select>
+        </div>
     </nav>
-
     <div id="mealsContainer"></div>
-
     <button id="saveRecipesBtn">Save Selected Recipes</button>
-
-    <script>
-        // Object to hold the selected recipes
-        const selectedRecipes = {
-            username: '{{user.username}}',
-            recipes: []
-        };
-
-        // Function to update the selectedRecipes object
-        function updateSelectedRecipes(mealTitle, isChecked) {
-            if (isChecked) {
-                if (!selectedRecipes.recipes.includes(mealTitle)) {
-                    selectedRecipes.recipes.push(mealTitle);
-                }
-            } else {
-                selectedRecipes.recipes = selectedRecipes.recipes.filter(recipe => recipe !== mealTitle);
+   <script>
+    // Handle View Filtered Recipes
+    document.getElementById('generateMealsBtn').addEventListener('click', async () => {
+        try {
+            const response = await fetch('/filter_meals');
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
             }
+            const data = await response.json();
+            const mealsContainer = document.getElementById('mealsContainer');
+            mealsContainer.innerHTML = ''; // Clear previous content
+            data.meals.forEach((meal) => {
+                const mealDiv = document.createElement('div');
+                mealDiv.innerHTML = `
+                    <input type="checkbox" class="recipe-checkbox" value="${meal.id}" data-title="${meal.title}">
+                    <h3>${meal.title}</h3>
+                    <img src="${meal.image}" alt="${meal.title}" style="width:200px;">
+                    <p><strong>Used Ingredients:</strong> ${meal.usedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
+                    <p><strong>Missed Ingredients:</strong> ${meal.missedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
+                    <p><strong>Removed Intolerances:</strong> ${meal.removedIntolerances.join(', ')}</p>
+                    <p><strong>Instructions:</strong> ${meal.instructions}</p>
+                `;
+                mealsContainer.appendChild(mealDiv);
+            });
+        } catch (error) {
+            console.error('Error fetching filtered meals:', error);
         }
+    });
 
-        // Display the meals on the page
-        document.getElementById('generateMealsBtn').addEventListener('click', async () => {
-            try {
-                const response = await fetch('/filter_meals', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+    // Handle Generate Meal Plan
+    document.getElementById('generateMealPlanBtn').addEventListener('click', async () => {
+        const day = document.getElementById('dayFilter').value;
+        try {
+            const response = await fetch('/meal_plan?days=' + encodeURIComponent(day), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
                 }
+            });
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            const mealsContainer = document.getElementById('mealsContainer');
+            mealsContainer.innerHTML = ''; // Clear previous content
 
-                const data = await response.json();
-                console.log('Meals:', data.meals);
-
-                // Display the meals on the page
-                const mealsContainer = document.getElementById('mealsContainer');
-                mealsContainer.innerHTML = ''; // Clear previous meals
-
-                data.meals.forEach((meal, index) => {
+            data.mealPlan.forEach((dayMeals, index) => {
+                const dayDiv = document.createElement('div');
+                dayDiv.innerHTML = `<h2>Day ${index + 1}</h2>`;
+                ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+                    const meal = dayMeals[mealType];
                     const mealDiv = document.createElement('div');
                     mealDiv.innerHTML = `
-                        <input type="checkbox" id="meal_${index + 1}" name="selectedMeals" value="${meal.title}">
-                        <label for="meal_${index + 1}"><h3>${index + 1}. ${meal.title}</h3></label>
+                        <h3>${mealType.charAt(0).toUpperCase() + mealType.slice(1)}</h3>
+                        <h4>${meal.title}</h4>
                         <img src="${meal.image}" alt="${meal.title}" style="width:200px;">
                         <p><strong>Used Ingredients:</strong> ${meal.usedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
                         <p><strong>Missed Ingredients:</strong> ${meal.missedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
                         <p><strong>Instructions:</strong> ${meal.instructions}</p>
                     `;
-                    mealsContainer.appendChild(mealDiv);
-
-                    // Add event listener to the checkbox
-                    const checkbox = mealDiv.querySelector(`#meal_${index + 1}`);
-                    checkbox.addEventListener('change', (event) => {
-                        const isChecked = event.target.checked;
-                        updateSelectedRecipes(meal.title, isChecked);
-                    });
+                    dayDiv.appendChild(mealDiv);
                 });
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        });
-
-        // Send the selected recipes to the server when the Save button is clicked
-        document.getElementById('saveRecipesBtn').addEventListener('click', async () => {
-            try {
-                const response = await fetch('/save_recipes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(selectedRecipes)
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                const result = await response.json();
-                alert(result.message);
-            } catch (error) {
-                console.error('Error saving recipes:', error);
-            }
-        });
-
-        // Toggle logout link visibility
-        const profilePicture = document.getElementById('profilePicture');
-        if (profilePicture) {
-            profilePicture.addEventListener('click', () => {
-                const logoutLink = document.getElementById('logoutLink');
-                if (logoutLink) {
-                    logoutLink.style.display = logoutLink.style.display === 'block' ? 'none' : 'block';
-                }
+                mealsContainer.appendChild(dayDiv);
             });
+
+            // Display leftover ingredients
+            const leftoverIngredientsDiv = document.createElement('div');
+            leftoverIngredientsDiv.innerHTML = `
+                <h2>Leftover Ingredients</h2>
+                <p>${data.leftoverIngredients.join(', ')}</p>
+            `;
+            mealsContainer.appendChild(leftoverIngredientsDiv);
+
+        } catch (error) {
+            console.error('Error generating meal plan:', error);
         }
-    </script>
+    });
+
+    // Retrieve the username from a data attribute
+    async function fetchUsername() {
+        try {
+            const response = await fetch('/get_username');
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            return data.username;  // Should be the actual username from the server
+        } catch (error) {
+            console.error('Error fetching username:', error);
+            return null;  // Return null or handle the error as needed
+        }
+    }
+
+    document.getElementById('saveRecipesBtn').addEventListener('click', async () => {
+        const username = await fetchUsername();
+        if (!username) {
+            console.error('Username is not defined');
+            return;  // Exit early if username is not available
+        }
+        const selectedCheckboxes = document.querySelectorAll('.recipe-checkbox:checked');
+        const selectedRecipes = Array.from(selectedCheckboxes).map(checkbox => checkbox.getAttribute('data-title'));
+        try {
+            const response = await fetch('/save_recipes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ recipes: selectedRecipes, username })
+            });
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const result = await response.json();
+            console.log('Save Result:', result);
+        } catch (error) {
+            console.error('Error saving recipes:', error);
+        }
+    });
+</script>
+
 </body>
 </html>
