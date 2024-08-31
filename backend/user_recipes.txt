@@ -1,10 +1,7 @@
 {
   "didier": [
     "Baked Ratatouille",
-    "Grilled Vegetables",
-    "Creamy Ratatouille Over Penne",
-    "Grilled Fattoush",
-    "Baked Ratatouille"
+    "Vegetarian Ratatouille"
   ],
   "amani": [
     "Grilled Fattoush",

@@ -838,20 +838,37 @@ async function getRecipeInstructions(recipeId) {
 }
 
 //saving chosen recipes
+app.get('/get_username', (req, res) => {
+  const username = req.session.username; 
+  if (username) {
+      res.json({ username });
+  } else {
+      res.status(404).json({ error: 'User not found' });
+  }
+});
+
 
 app.post('/save_recipes', (req, res) => {
   const { username, recipes } = req.body;
 
-  // Read existing data
+  // Path to the file where user recipes are stored
   const filePath = path.join(__dirname, 'user_recipes.txt');
+
+  // Read existing data from the file
   fs.readFile(filePath, 'utf8', (err, data) => {
       let usersData = {};
 
       if (!err && data) {
-          usersData = JSON.parse(data);
+          try {
+              usersData = JSON.parse(data);
+          } catch (e) {
+              // Handle JSON parse error
+              console.error('Error parsing JSON', e);
+              usersData = {};
+          }
       }
 
-      // Update the user's selected meals
+      // Update the user's selected recipes
       usersData[username] = recipes;
 
       // Save the updated data back to the file
