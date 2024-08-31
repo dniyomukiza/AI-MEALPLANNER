@@ -15,7 +15,6 @@ const app = express();
 const upload = multer({ dest: 'uploads/' });
 const saltRounds = 10;
 const axios = require('axios');
-
 const pluralize = require('pluralize');
 
 //The session secret is used to create a hash (or signature) of the session ID. 
@@ -830,3 +829,30 @@ async function getRecipeInstructions(recipeId) {
     return 'Instructions not available';
   }
 }
+
+
+app.post('/save_recipes', (req, res) => {
+  const { username, recipes } = req.body;
+
+  // Read existing data
+  const filePath = path.join(__dirname, 'user_recipes.txt');
+  fs.readFile(filePath, 'utf8', (err, data) => {
+      let usersData = {};
+
+      if (!err && data) {
+          usersData = JSON.parse(data);
+      }
+
+      // Update the user's selected meals
+      usersData[username] = recipes;
+
+      // Save the updated data back to the file
+      fs.writeFile(filePath, JSON.stringify(usersData, null, 2), (err) => {
+          if (err) {
+              console.error('Error writing to file', err);
+              return res.status(500).json({ message: 'Failed to save recipe selection' });
+          }
+          res.status(200).json({ message: 'Recipe selection saved successfully' });
+      });
+  });
+});

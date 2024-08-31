@@ -1,0 +1,10 @@
+{
+  "didier": [
+    "Grilled Vegetables",
+    "Baked Ratatouille"
+  ],
+  "amani": [
+    "Grilled Fattoush",
+    "Roasted Ratatouille Gratin"
+  ]
+}
