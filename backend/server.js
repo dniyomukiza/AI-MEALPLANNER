@@ -728,11 +728,11 @@ app.get('/filter_meals', async (req, res) => {
 app.post('/meal_plan', isAuthenticated, async (req, res) => {
   try {
     const num_of_days = parseInt(req.query.days) || 1;
-    
+
     // Find the user's food inventory
     const inventory = await FoodInventory.findOne({ userId: req.session.userId });
     let availableIngredients = inventory ? inventory.items.map(item => pluralize.singular(item.name.toLowerCase())) : [];
-    
+
     // Fetch user health data for dietary restrictions
     const healthData = await Health.findOne({ userId: req.session.userId });
     let intolerances = healthData ? healthData.health_cond : [];
@@ -741,27 +741,36 @@ app.post('/meal_plan', isAuthenticated, async (req, res) => {
     // Create an array to store the meal plan
     const mealPlan = [];
     const totalUsedIngredients = new Set();
+    const usedRecipeIds = new Set();
 
+    // Loop through the number of days requested
     for (let day = 0; day < num_of_days; day++) {
+
       const dayMeals = {};
       for (const mealType of ['breakfast', 'lunch', 'dinner']) {
-        
         // Create a string of available ingredients
         const ingredientListString = availableIngredients.join(',');
 
-        // Make a request to the Spoonacular API to find a recipe
+        // Make a request to the Spoonacular API to find recipes
         const recipesResponse = await axios.get('https://api.spoonacular.com/recipes/findByIngredients', {
           params: {
             ingredients: ingredientListString,
             apiKey: process.env.SPOONACULAR_KEY,
-            number: 1,
-            type: mealType, // Add meal type to get more appropriate recipes
+            number: 1, // Increased to get more options
+            type: mealType,
             intolerances: intolerances
           }
         });
 
-        if (recipesResponse.data.length > 0) {
-          const meal = recipesResponse.data[0];
+        // Filter out already used recipes
+        const availableRecipes = recipesResponse.data.filter(recipe => !usedRecipeIds.has(recipe.id));
+
+        if (availableRecipes.length > 0) {
+          
+          // Choose a random recipe from available ones
+          const meal = availableRecipes[0];
+          usedRecipeIds.add(meal.id);
+
           const instructions = await getRecipeInstructions(meal.id);
 
           // Add the meal to the day's meals
@@ -779,7 +788,8 @@ app.post('/meal_plan', isAuthenticated, async (req, res) => {
               amount: ingredient.amount,
               unit: ingredient.unit
             })),
-            instructions: instructions
+            instructions: instructions,
+            availableIngredients_Left: availableIngredients
           };
 
           // Update total used ingredients and available ingredients 
@@ -788,15 +798,15 @@ app.post('/meal_plan', isAuthenticated, async (req, res) => {
             totalUsedIngredients.add(ingredientName);
 
             // Remove the used ingredient from availableIngredients
-            availableIngredients = availableIngredients.filter(item => 
-              item !== ingredientName
-            );
+            availableIngredients = availableIngredients.filter(item => item !== ingredientName);
           });
-
-          console.log('Available:', availableIngredients);
-          console.log('Used Ingredients:', Array.from(totalUsedIngredients));
         } else {
-          dayMeals[mealType] = null;
+          dayMeals[mealType] = {
+            title: "No unique recipe available",
+            usedIngredients: [],
+            missedIngredients: [],
+            instructions: "We couldn't find a unique recipe for this meal. Consider adding more ingredients to your inventory or adjusting your dietary restrictions."
+          };
         }
       }
       mealPlan.push(dayMeals);
@@ -805,8 +815,6 @@ app.post('/meal_plan', isAuthenticated, async (req, res) => {
     // Convert the set of used ingredients to an array
     const leftoverIngredients = availableIngredients;
 
-    console.log('Meal Plan:', mealPlan);
-
     // Return the meal plan and leftover ingredients to the client
     res.json({ mealPlan, leftoverIngredients });
   } catch (error) {
@@ -814,7 +822,6 @@ app.post('/meal_plan', isAuthenticated, async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
-
 // Helper function to get recipe instructions
 async function getRecipeInstructions(recipeId) {
   try {
