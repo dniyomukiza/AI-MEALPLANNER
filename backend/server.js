@@ -837,6 +837,7 @@ async function getRecipeInstructions(recipeId) {
   }
 }
 
+//saving chosen recipes
 
 app.post('/save_recipes', (req, res) => {
   const { username, recipes } = req.body;
@@ -863,3 +864,21 @@ app.post('/save_recipes', (req, res) => {
       });
   });
 });
+
+//analytics
+app.get('/analytics', (req, res) => {
+  // Read and parse the JSON data file
+  const filePath = path.join(__dirname, 'user_recipes.txt');
+  const fileContent = fs.readFileSync(filePath, 'utf-8');
+  const data = JSON.parse(fileContent);
+
+  // Flatten and count recipes
+  const allRecipes = Object.values(data).flat();
+  const recipeCounts = {};
+  allRecipes.forEach(recipe => {
+    recipeCounts[recipe] = (recipeCounts[recipe] || 0) + 1;
+  });
+
+  res.render('analytics', { recipeCounts: JSON.stringify(recipeCounts) });
+});
+
