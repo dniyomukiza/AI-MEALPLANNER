@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="filtered.css"> 
+    <link rel="stylesheet" href="filtered.css">
     <title>Filtered Recipes</title>
 </head>
 <body>
@@ -18,30 +18,20 @@
         </div>
 
         <button id="generateMealsBtn">View Filtered Recipes</button>
-
-        <button id="generateMealPlan">Generate Meal Plan</button>
-
-        <select id="mealPlanDays" style="width: 100px;">
-            <option value="1">1 day</option>
-            <option value="2">2 days</option>
-            <option value="3">3 days</option>
-            <option value="4">4 days</option>
-            <option value="5">5 days</option>
-            <option value="6">6 days</option>
-            <option value="7">7 days</option>
-        </select>
-
-
     </nav>
 
     <div id="mealsContainer"></div>
-    <div id="mealPlanContainer"></div>
+
+    <button id="saveRecipesBtn">Save Selected Recipes</button>
 
     <script>
-        
-    document.getElementById('generateMealPlan').addEventListener('click', async () => {
-    const days = document.getElementById('mealPlanDays').value;
+        // Object to hold the selected recipes
+        const selectedRecipes = {
+            username: '{{user.username}}',
+            recipes: []
+        };
 
+<<<<<<< Updated upstream
     try {
         const response = await fetch(`/meal_plan?days=${days}`, {
             method: 'POST',
@@ -92,27 +82,18 @@ function displayMealPlan(data) {
                         
                 } else {
                     mealDiv.innerHTML = `<h3>${mealType.charAt(0).toUpperCase() + mealType.slice(1)}: No recipe available</h3>`;
+=======
+        // Function to update the selectedRecipes object
+        function updateSelectedRecipes(mealTitle, isChecked) {
+            if (isChecked) {
+                if (!selectedRecipes.recipes.includes(mealTitle)) {
+                    selectedRecipes.recipes.push(mealTitle);
+>>>>>>> Stashed changes
                 }
-
-                dayDiv.appendChild(mealDiv);
-            });
-
-            mealPlanContainer.appendChild(dayDiv);
-        });
-    } else {
-        mealPlanContainer.innerHTML = '<p>No meal plan data available.</p>';
-    }
-
-    // Display leftover ingredients
-    if (data.leftoverIngredients && data.leftoverIngredients.length > 0) {
-        const leftoverDiv = document.createElement('div');
-        leftoverDiv.innerHTML = `
-            <h3>Leftover Ingredients</h3>
-            <p>${data.leftoverIngredients.join(', ')}</p>
-        `;
-        mealPlanContainer.appendChild(leftoverDiv);
-    }
-}
+            } else {
+                selectedRecipes.recipes = selectedRecipes.recipes.filter(recipe => recipe !== mealTitle);
+            }
+        }
 
         // Display the meals on the page
         document.getElementById('generateMealsBtn').addEventListener('click', async () => {
@@ -135,28 +116,52 @@ function displayMealPlan(data) {
                 const mealsContainer = document.getElementById('mealsContainer');
                 mealsContainer.innerHTML = ''; // Clear previous meals
 
-                data.meals.forEach(meal => {
+                data.meals.forEach((meal, index) => {
                     const mealDiv = document.createElement('div');
                     mealDiv.innerHTML = `
-                        <h3>${meal.title}</h3>
+                        <input type="checkbox" id="meal_${index + 1}" name="selectedMeals" value="${meal.title}">
+                        <label for="meal_${index + 1}"><h3>${index + 1}. ${meal.title}</h3></label>
                         <img src="${meal.image}" alt="${meal.title}" style="width:200px;">
                         <p><strong>Used Ingredients:</strong> ${meal.usedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
                         <p><strong>Missed Ingredients:</strong> ${meal.missedIngredients.map(i => `${i.name} (${i.amount} ${i.unit})`).join(', ')}</p>
                         <p><strong>Instructions:</strong> ${meal.instructions}</p>
                     `;
-                    
                     mealsContainer.appendChild(mealDiv);
+
+                    // Add event listener to the checkbox
+                    const checkbox = mealDiv.querySelector(`#meal_${index + 1}`);
+                    checkbox.addEventListener('change', (event) => {
+                        const isChecked = event.target.checked;
+                        updateSelectedRecipes(meal.title, isChecked);
+                    });
                 });
             } catch (error) {
                 console.error('Error:', error);
             }
         });
 
-    // Toggle logout link visibility
-    document.getElementById('profilePicture').addEventListener('click', () => {
-        const logoutLink = document.getElementById('logoutLink');
-        logoutLink.style.display = logoutLink.style.display === 'block' ? 'none' : 'block';
-    });
+        // Send the selected recipes to the server when the Save button is clicked
+        document.getElementById('saveRecipesBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/save_recipes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(selectedRecipes)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const result = await response.json();
+                alert(result.message);
+            } catch (error) {
+                console.error('Error saving recipes:', error);
+            }
+        });
     </script>
 </body>
 </html>
+
