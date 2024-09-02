@@ -129,31 +129,123 @@
         }
     }
 
-    document.getElementById('saveRecipesBtn').addEventListener('click', async () => {
-        const username = await fetchUsername();
-        if (!username) {
-            console.error('Username is not defined');
-            return;  // Exit early if username is not available
+  // Retrieve the username from a data attribute or localStorage
+function getUsername() {
+    // First, try to get the username from a data attribute
+    const usernameElement = document.getElementById('username');
+    if (usernameElement && usernameElement.dataset.username) {
+        return usernameElement.dataset.username;
+    }
+    
+    // If not found in data attribute, try localStorage
+    return localStorage.getItem('username');
+}
+
+document.getElementById('saveRecipesBtn').addEventListener('click', async () => {
+    const username = getUsername();
+    if (!username) {
+        console.error('Username is not defined');
+        alert('Unable to save recipes. Please try logging in again.');
+        return;
+    }
+    const selectedCheckboxes = document.querySelectorAll('.recipe-checkbox:checked');
+    const selectedRecipes = Array.from(selectedCheckboxes).map(checkbox => checkbox.getAttribute('data-title'));
+    
+    if (selectedRecipes.length === 0) {
+        alert('Please select at least one recipe to save.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/save_recipes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                recipes: selectedRecipes
+            })
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        const result = await response.json();
+        console.log('Save Result:', result);
+        alert('Recipes saved successfully!');
+    } catch (error) {
+        console.error('Error saving recipes:', error);
+        alert('Failed to save recipes. Please try again.');
+    }
+});
+
+// Fetch username from the server
+async function fetchUsername() {
+    try {
+        const response = await fetch('/get_username');
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        return data.username;
+    } catch (error) {
+        console.error('Error fetching username:', error);
+        return null;
+    }
+}
+// Fetch username from the server
+async function fetchUsername() {
+    try {
+        const response = await fetch('/get_username');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data.username;
+    } catch (error) {
+        console.error('Error fetching username:', error);
+        throw error; // Rethrow the error to be handled by the caller
+    }
+}
+
+document.getElementById('saveRecipesBtn').addEventListener('click', async () => {
+    try {
+        const username = await fetchUsername();
         const selectedCheckboxes = document.querySelectorAll('.recipe-checkbox:checked');
         const selectedRecipes = Array.from(selectedCheckboxes).map(checkbox => checkbox.getAttribute('data-title'));
-        try {
-            const response = await fetch('/save_recipes', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ recipes: selectedRecipes, username })
-            });
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            const result = await response.json();
-            console.log('Save Result:', result);
-        } catch (error) {
-            console.error('Error saving recipes:', error);
+        
+        if (selectedRecipes.length === 0) {
+            alert('Please select at least one recipe to save.');
+            return;
         }
-    });
+
+        const response = await fetch('/save_recipes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                recipes: selectedRecipes
+            })
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        const result = await response.json();
+        console.log('Save Result:', result);
+        alert('Recipes saved successfully!');
+    } catch (error) {
+        console.error('Error:', error);
+        if (error.message === 'User not logged in') {
+            alert('You need to be logged in to save recipes. Please log in and try again.');
+        } else {
+            alert(`Unable to save recipes: ${error.message}. Please try again later.`);
+        }
+    }
+});
 </script>
 
 </body>

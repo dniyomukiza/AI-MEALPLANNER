@@ -838,49 +838,63 @@ async function getRecipeInstructions(recipeId) {
 }
 
 //saving chosen recipes
-app.get('/get_username', (req, res) => {
-  const username = req.session.username; 
-  if (username) {
-      res.json({ username });
-  } else {
-      res.status(404).json({ error: 'User not found' });
+app.get('/get_username', async (req, res) => {
+  try {
+      if (req.session && req.session.userId) {
+          const user = await User.findById(req.session.userId);
+          if (user) {
+              res.json({ username: user.username });
+          } else {
+              res.status(404).json({ error: 'User not found' });
+          }
+      } else {
+          res.status(401).json({ error: 'User not logged in' });
+      }
+  } catch (error) {
+      console.error('Error fetching username:', error);
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 
 app.post('/save_recipes', (req, res) => {
   const { username, recipes } = req.body;
 
-  // Path to the file where user recipes are stored
+  if (!username || !Array.isArray(recipes)) {
+    return res.status(400).json({ error: 'Invalid input' });
+  }
+
   const filePath = path.join(__dirname, 'user_recipes.txt');
 
-  // Read existing data from the file
-  fs.readFile(filePath, 'utf8', (err, data) => {
-      let usersData = {};
-
-      if (!err && data) {
-          try {
-              usersData = JSON.parse(data);
-          } catch (e) {
-              // Handle JSON parse error
-              console.error('Error parsing JSON', e);
-              usersData = {};
-          }
+  // Read existing data
+  fs.readFile(filePath, 'utf-8', (err, data) => {
+    let userRecipes = {};
+    if (!err) {
+      try {
+        userRecipes = JSON.parse(data);
+      } catch (parseError) {
+        console.error('Error parsing existing data:', parseError);
       }
+    }
 
-      // Update the user's selected recipes
-      usersData[username] = recipes;
+    // Update or add new recipes for the user
+    if (username in userRecipes) {
+      // Append new recipes without removing duplicates
+      userRecipes[username] = userRecipes[username].concat(recipes);
+    } else {
+      userRecipes[username] = recipes;
+    }
 
-      // Save the updated data back to the file
-      fs.writeFile(filePath, JSON.stringify(usersData, null, 2), (err) => {
-          if (err) {
-              console.error('Error writing to file', err);
-              return res.status(500).json({ message: 'Failed to save recipe selection' });
-          }
-          res.status(200).json({ message: 'Recipe selection saved successfully' });
-      });
+    // Write updated data back to file
+    fs.writeFile(filePath, JSON.stringify(userRecipes, null, 2), (writeErr) => {
+      if (writeErr) {
+        console.error('Error saving recipes:', writeErr);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+      res.json({ message: "Recipes saved successfully" });
+    });
   });
 });
+
 
 //analytics
 app.get('/analytics', (req, res) => {
