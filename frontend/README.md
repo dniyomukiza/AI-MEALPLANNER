@@ -1,70 +1,160 @@
-# Getting Started with Create React App
+# MealMate: Smart Meal Planning Application
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+MealMate is a web application that helps users plan meals based on their available ingredients, dietary restrictions, and health goals. It uses AI-powered image recognition to identify food items and integrates with the Spoonacular API to generate recipe suggestions.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- User authentication and profile management
+- AI-powered food item recognition from uploaded images
+- Personalized meal suggestions based on available ingredients
+- Dietary restriction and food intolerance filtering
+- Multi-day meal planning
+- Recipe saving and analytics
 
-### `npm start`
+## Technologies Used
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Node.js
+- Express.js
+- MongoDB with Mongoose
+- Google's Generative AI (Gemini 1.5 Pro)
+- Spoonacular API
+- Handlebars (HBS) for templating
+- Multer for file uploads
+- Nodemailer for email functionality
+- bcrypt for password hashing
+- Express-session for user sessions
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Setup and Installation
 
-### `npm test`
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables in a `.env` file:
+   - SESSION_SECRET
+   - EMAIL_USER
+   - EMAIL_PASS
+   - API_KEY (for Google's Generative AI)
+   - SPOONACULAR_KEY
+   - PROFILE_PATH (optional, for profile picture uploads)
+4. Ensure MongoDB is running and accessible
+5. Start the server: `node server.js`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## API Endpoints
 
-### `npm run build`
+- `/`: Home page
+- `/guest`: Guest user page
+- `/login`: User login
+- `/signup`: User registration
+- `/upload_photo`: Photo upload for food recognition
+- `/analyze-image`: AI analysis of uploaded food images
+- `/generate_meals`: Generate meal suggestions
+- `/filter_meals`: Filter meals based on dietary restrictions
+- `/meal_plan`: Generate multi-day meal plans
+- `/inventory`: Manage user's food inventory
+- `/analytics`: View recipe popularity analytics
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Security Features
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- Password hashing with bcrypt
+- Secure session management
+- CSRF protection with express-session
+- Authenticated routes with middleware
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Future Improvements
 
-### `npm run eject`
+- Implement OAuth for social login
+- Add more detailed nutritional information
+- Enhance the AI model for better food recognition
+- Implement a mobile app version
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Contributing
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Contributions are welcome! Please fork the repository and submit a pull request with your proposed changes.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## License
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+This project is licensed under the MIT License.
 
-## Learn More
+# Deploying to GitHub Pages with a Custom Domain
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Initial Setup
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+1. **Go to Your Repository**
+   - Navigate to your GitHub repository in a web browser.
 
-### Code Splitting
+2. **Access Repository Settings**
+   - Click the "Settings" tab at the top of your repository page.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+3. **Navigate to Pages Settings**
+   - In the left sidebar, select "Pages" under "Code and automation".
 
-### Analyzing the Bundle Size
+4. **Select Source**
+   - Under "Source", choose your deployment branch (usually "main" or "master").
+   - Select the appropriate root folder (typically "/ (root)").
+   - Click "Save".
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Adding a Custom Domain
 
-### Making a Progressive Web App
+5. **Add Custom Domain**
+   - Scroll to the "Custom domain" section.
+   - Enter your custom domain (e.g., "www.yourdomain.com").
+   - Click "Save".
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+6. **Verify Domain Ownership**
+   - GitHub will add a CNAME file to your repository with your custom domain.
+   - Commit this change if prompted.
 
-### Advanced Configuration
+## DNS Configuration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+7. **Configure DNS Settings**
+   - Go to your domain registrar's website.
+   - Access the DNS settings for your domain.
+   - Add the following DNS records:
+     - For an apex domain (yourdomain.com):
+       - Add four A records pointing to GitHub's IP addresses:
+         ```
+         185.199.108.153
+         185.199.109.153
+         185.199.110.153
+         185.199.111.153
+         ```
+     - For a www subdomain:
+       - Add a CNAME record pointing to your GitHub Pages URL:
+         `<username>.github.io` or `<organization>.github.io`
 
-### Deployment
+8. **Wait for DNS Propagation**
+   - DNS changes can take up to 24 hours to propagate globally.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## Finalizing Setup
 
-### `npm run build` fails to minify
+9. **Enforce HTTPS**
+   - In GitHub Pages settings, check "Enforce HTTPS".
+   - Note: This may be unavailable initially; wait a few hours and refresh.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+10. **Verify Custom Domain**
+    - GitHub will automatically verify your custom domain.
+    - Look for a success message in the Pages settings.
+
+11. **Test Your Custom Domain**
+    - Open a new browser tab and navigate to your custom domain.
+    - Your GitHub Pages site should be accessible via your custom domain.
+
+## Additional Steps
+
+12. **Update Repository Settings (Optional)**
+    - Update your repository description or website field with your new custom domain.
+
+13. **Maintain CNAME File**
+    - Ensure the CNAME file remains in your repository's root.
+    - For static site generators, add this file to your build process.
+
+14. **Monitor and Troubleshoot**
+    - Check the Pages section in repository settings for warnings or errors.
+    - If the site isn't working, verify DNS settings and allow time for propagation.
+
+## Remember
+
+- Use "www" in custom domain settings if you've set up a www CNAME record.
+- For apex domains, ensure A records are set up correctly.
+- HTTPS certification for custom domains can take up to 24 hours.
+
+By following these steps, your GitHub Pages site should be successfully connected to your custom domain, providing a professional and branded web address for your project.
